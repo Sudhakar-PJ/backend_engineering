@@ -105,6 +105,8 @@ flowchart TD
 
 **The rule**: you never rebuild the scaffold. T2's `production-api-template` is the base of every project after it.
 
+**T7 integration mechanics**: all services run as separate Docker containers, orchestrated by `docker-compose.yml` at the repo root. The `commerce-gateway` (T7) routes external REST/GraphQL/WS requests to internal services via HTTP/gRPC. Each service has its own Dockerfile. This is both realistic architecture and easy local dev.
+
 ---
 
 ## 6. IN / OUT Boundary
@@ -191,11 +193,21 @@ Every tier file will tag data/infra topics with `Local` or `Cloud-optional`.
 
 ---
 
-## 9. The One Rule That Matters
+## 9. The Spine Rule
 
-**Every BUILD topic gets built. No skipping.** USE and KNOW topics can be deferred or trimmed. BUILD topics are the spine — the whole point of this curriculum is that you can implement the mechanics yourself, not just `npm install` them.
+**Nothing can be skipped.** Every topic in every tier is engaged with, in order.
 
-If you're ever short on time, cut KNOW first, then USE, then extend your timeline. Never cut BUILD.
+Treatment depth varies by mode:
+
+| Mode      | Treatment                                                                                          |
+| --------- | -------------------------------------------------------------------------------------------------- |
+| **BUILD** | Full 5-part course-material file + you build the artifact.                                         |
+| **USE**   | Short course-material file (Intuition + Usage + Failure Modes). You use the tool in the project. |
+| **KNOW**  | Explainer paragraph. Confirm understanding. No course-material file. No build.                    |
+
+**Stuck?** Stuck Protocol applies: re-explain with a new analogy, offer smaller scope, log as `REVISIT` in the error journal if you choose to move forward.
+
+**REVISIT items** are re-engaged when the next tier uses them. They are not "skipped" — they are deferred with a marker.
 
 ---
 
@@ -207,94 +219,92 @@ Case studies and seminal papers are **separate documents**, not embedded in tier
 - **`14-papers.md`** — seminal systems papers, organized by tier, with reading-time budgets and "why this matters today" annotations.
 
 **Placement rule**:
-
 - If a case study or paper reinforces a **backend engineering topic** (Postgres, idempotency, queues, caching, API design, tracing, incident response) → lives in `13-` or `14-`, cross-referenced from the relevant tier file.
 - If it reinforces **distributed systems theory** (consensus, sharding algorithms, multi-region, CRDTs) → lives in **Repo 2** (System Design), cross-referenced from Repo 1 if applicable.
 
 **Attach pattern**: each tier file ends with a two-line footer:
-
 ```
 ## Case Studies & Papers
 See `13-case-studies.md § T<tier>` and `14-papers.md § T<tier>`.
 ```
 
-**Contents (Repo 1)**:
+### Deep Dives (on-demand)
 
-Case studies (14 primary + 4 cross-referenced from Repo 2):
+Short entries in `13-case-studies.md` and `14-papers.md` are just that — short. When the learner asks "go deeper on X," the AI generates a full deep-dive file:
 
-- Stripe ledger & idempotency → T4
-- Stripe date-based API versioning → T7
-- Segment $1M Kafka incident → T5, T6
-- Discord Cassandra → ScyllaDB → T3a
-- Instagram Postgres sharding → T3a
-- GitHub MySQL → Vitess → T3a
-- Reddit queue architecture → T5
-- Slack job queue & fan-out → T5, T7
-- Cloudflare postmortem culture → T6
-- Airbnb service mesh → T7
-- WhatsApp small server footprint → T1, T5
-- Meta TAO & Haystack → T3a, T3b, T5
-- Figma/Docs CRDT vs OT → T7
-- Shopify Pods architecture → T7 (cross-ref Repo 2)
-- Amazon Prime Video reversal → T7 (cross-ref Repo 2)
-- Netflix chaos engineering → T6 (cross-ref Repo 2)
-- Uber H3 geospatial → T7 (cross-ref Repo 2)
-- Google GFS & Bigtable in practice → T3b awareness (cross-ref Repo 2)
-- Amazon Dynamo vs DynamoDB → T3a awareness (cross-ref Repo 2)
+- **Case study deep dives** → `case-study-deep-dives/[slug].md`
+- **Paper deep dives** → `paper-deep-dives/[slug].md`
 
-Papers (Repo 1):
-
-- Google Dapper → T6
-- Google MapReduce → T5
-
-Papers moved to **Repo 2** (System Design): Lamport clocks, Sagas, Paxos, Chord, GFS, Bigtable, Dynamo, Dremel, ZooKeeper, Kafka paper, Spanner, TAO, Raft, Aurora.
+Deep dives follow a 5-part structure (Context, Technical Deep Dive, Code Excerpts, Trade-offs, What You Can Apply) and are 400–800 lines each. They are **never proactively suggested** — only generated when explicitly requested. See `15-instructor-rules.md` Rule 15 for full details.
 
 ---
 
 ## 11. Repo Files
 
 ```
-00-overview.md
-01-tier-1-language-runtime.md
-02-tier-2-service-construction.md
-03-tier-3a-relational-postgres.md
-04-tier-3b-document-mongodb.md
-05-tier-3c-keyvalue-redis.md
-06-tier-4-identity-security.md
-07-tier-5-async-reliability.md
-08-tier-6-production-operations.md
-09-tier-7-enterprise-surfaces.md
-10-backend-mastery-projects.md
-11-progress-tracker.md
-12-problems-tools-index.md
-13-case-studies.md
-14-papers.md
+backend-engineering/
+├── SESSION-START.md              ← ENTRY POINT. Read this first every session.
+├── 00-overview.md
+├── 01-tier-1-language-runtime.md
+├── 02-tier-2-service-construction.md
+├── 03-tier-3a-relational-postgres.md
+├── 04-tier-3b-document-mongodb.md
+├── 05-tier-3c-keyvalue-redis.md
+├── 06-tier-4-identity-security.md
+├── 07-tier-5-async-reliability.md
+├── 08-tier-6-production-operations.md
+├── 09-tier-7-enterprise-surfaces.md
+├── 10-backend-mastery-projects.md
+├── 11-progress-tracker.md
+├── 12-problems-tools-index.md
+├── 13-case-studies.md
+├── 14-papers.md
+├── 15-instructor-rules.md
+├── 16-error-journal.md
+├── course-materials/
+│   ├── 01-tier-1/
+│   ├── 02-tier-2/
+│   ├── 03-tier-3a/
+│   ├── 04-tier-3b/
+│   ├── 05-tier-3c/
+│   ├── 06-tier-4/
+│   ├── 07-tier-5/
+│   ├── 08-tier-6/
+│   └── 09-tier-7/
+├── case-study-deep-dives/        ← generated on demand
+├── paper-deep-dives/             ← generated on demand
+└── projects/
+    ├── t1-cli/
+    ├── t2-production-api-template/
+    ├── t3a-inventory-service/
+    ├── t3b-catalog-service/
+    ├── t3c-modules/
+    ├── t4-auth-service/
+    ├── t5-media-service/
+    ├── t7-commerce-gateway/
+    └── docker-compose.yml
 ```
 
-**Course-material files** (deep dives per subtopic) live in a separate folder, generated on demand:
-
-```
-course-materials/
-  01-tier-1/
-    01-01-closures.md
-    01-02-this-binding.md
-    01-03-esm-cjs-interop.md
-    ...
-```
-
-Each tier file is a **map**. Course-material files are the **territory**.
+**The ENTRY POINT is `SESSION-START.md`.** Every session begins there.
 
 ---
 
 ## 12. How to Use This Repo
 
-1. **Read this file once.** Understand the structure.
-2. **Open `01-tier-1`.** Work through topics linearly.
-3. **When you reach a BUILD topic**, generate a course-material file for it (or ask your AI instructor to).
-4. **Update `11-progress-tracker.md`** at the end of each session.
-5. **Use `12-problems-tools-index.md`** when you're stuck on "which tool solves this?".
-6. **Use `13-case-studies.md` and `14-papers.md`** as supplementary reading — organized by tier.
-7. **Do not skip tiers.** The spine is linear for a reason — each tier assumes the previous.
+You are working with an AI instructor (Antigravity) that reads and writes files directly. There is no copy-pasting between sessions.
+
+**Every session:**
+
+1. Open the repo in Antigravity.
+2. Say: **"Read SESSION-START.md and start."**
+3. The AI reads `SESSION-START.md`, `15-instructor-rules.md`, `11-progress-tracker.md`, and the current tier file.
+4. The AI restates your position and waits for confirmation.
+5. You confirm. Session begins.
+6. When done, say **"that's enough for today."** The AI updates the tracker, error journal, and tier retrospective (if tier complete), then confirms what was written.
+
+**You don't paste anything.** The AI reads from disk. The AI writes course materials, case study deep dives, tracker updates, and error journal entries directly to disk and shows you a diff.
+
+**Reference files** (`00-overview.md`, `12-problems-tools-index.md`, `13-case-studies.md`, `14-papers.md`) — the AI reads these only when relevant, per `SESSION-START.md`.
 
 ---
 
@@ -302,7 +312,7 @@ Each tier file is a **map**. Course-material files are the **territory**.
 
 You've completed this curriculum when:
 
-- All T1–T7 BUILD topics are built and understood
+- All T1–T7 topics (BUILD, USE, KNOW) are engaged with in order
 - T7's `commerce-gateway` composes the earlier services and runs end-to-end
 - Backend Mastery **Core 6** projects are built, tested, containerized, and deployed
 - You can pick up any unfamiliar backend problem and know which tools to reach for — without looking them up

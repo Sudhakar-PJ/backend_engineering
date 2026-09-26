@@ -9,7 +9,7 @@
 
 ## 🚦 Primer Status
 
-- [ ] **Read `00b-engineering-foundations-primer.md`** (required before T1)
+- [x] **Read `00b-engineering-foundations-primer.md`** (required before T1)
 
 ---
 

@@ -20,17 +20,19 @@ Execute these steps **in order**, then stop and wait for confirmation.
 1. **Read this file** (`SESSION-START.md`) — done if you're reading this.
 2. **Read `15-instructor-rules.md`** — full operating rules.
 3. **Read `11-progress-tracker.md`** — where the learner is.
-4. **Identify the current tier file** from the tracker (e.g., if tracker says T1, read `01-tier-1-language-runtime.md`).
-5. **Read the current tier file** — the topic map for the tier in progress.
-6. **Determine the current topic** from the tracker + tier file.
-7. **Check if a course-material file exists** for that topic in `course-materials/`.
+4. **Check the primer status**:
+   - If `00b-engineering-foundations-primer.md` is not marked as read in the tracker, the learner has not started the curriculum. Confirm they've read it before proceeding. If not, tell them to read it first.
+5. **Identify the current tier file** from the tracker (e.g., if tracker says T1, read `01-tier-1-language-runtime.md`).
+6. **Read the current tier file** — the topic map for the tier in progress.
+7. **Determine the current topic** from the tracker + tier file.
+8. **Check if a course-material file exists** for that topic in `course-materials/`.
    - If yes, read it.
    - If no, do not generate it yet. You will generate it when the topic begins.
-8. **Restate position to the learner** in this exact format:
+9. **Restate position to the learner** in this exact format:
 
    > "You're at **[Tier].[Subsection] — [Topic name]**. Last session we finished **[previous topic]**. Next is **[current topic]**. Ready to continue?"
 
-9. **Stop and wait** for the learner's confirmation. Do nothing else.
+10. **Stop and wait** for the learner's confirmation. Do nothing else.
 
 **Do not** generate course material, update files, or teach anything before the learner confirms.
 
@@ -49,8 +51,8 @@ When the learner says "next" or "continue" or confirms to begin a topic:
    - **KNOW** → explainer-only.
 3. **Present the full content in chat.**
 4. **Write the file to disk** at `course-materials/[tier-folder]/[topic-slug].md`.
-5. **Tell the learner**: *"Written to `course-materials/01-tier-1/01-01-closures.md`."*
-6. **Ask**: *"Understood, or want me to re-explain?"*
+5. **Tell the learner**: _"Written to `course-materials/01-tier-1/01-01-closures.md`."_
+6. **Ask**: _"Understood, or want me to re-explain?"_
 7. **Stop and wait.**
 
 Do not proceed to the next topic until the learner confirms.
@@ -58,8 +60,9 @@ Do not proceed to the next topic until the learner confirms.
 ### Handling "I don't understand"
 
 Trigger the Stuck Protocol (`15-instructor-rules.md` Rule 5):
+
 1. Re-explain with a new analogy or concrete example.
-2. Offer a smaller scope: *"Minimum to move on, or full depth?"*
+2. Offer a smaller scope: _"Minimum to move on, or full depth?"_
 3. If the learner moves forward without full mastery, log as `REVISIT` in `16-error-journal.md` (write directly to disk, then confirm).
 
 ### Optional deep dives
@@ -69,6 +72,7 @@ If the learner says "go deeper on X" where X is a case study or paper, follow Ru
 ### Handling "re-read" or drift
 
 If the learner says "re-read SESSION-START.md" or you notice you've lost track:
+
 1. Re-read `SESSION-START.md`.
 2. Re-read `15-instructor-rules.md`.
 3. Re-read `11-progress-tracker.md`.
@@ -88,10 +92,11 @@ When the learner says "that's enough for today" (or similar):
    - Update the **Current Position** block (tier, subsection, topic, next).
    - Update **Last Updated** date.
    - Add a new entry under **Session Notes** (date, completed, stuck, REVISIT logged, next session starts at).
-2. **Show the learner a diff**: e.g., *"Updated `11-progress-tracker.md`: T1.2 topic 2 → complete. Next session starts at T1.2 topic 3 (Promises)."*
+2. **Show the learner a diff**: e.g., _"Updated `11-progress-tracker.md`: T1.2 topic 2 → complete. Next session starts at T1.2 topic 3 (Promises)."_
 3. **Update `16-error-journal.md`** if any bugs, failure modes, or REVISIT items came up. Show the diff.
 4. **If the tier is complete**, write a one-paragraph **tier retrospective** at the bottom of the tier file. Show the diff.
-5. **Confirm** all writes: list the files touched and the changes made.
+5. **If a project is complete**, verify the `docs/adr/` folder exists with at least 3 ADRs (see `15-instructor-rules.md` Rule 10). If missing, remind the learner.
+6. **Confirm** all writes: list the files touched and the changes made.
 
 Do not close the session without updating the tracker.
 
@@ -109,20 +114,22 @@ Do not close the session without updating the tracker.
 - **Do not proceed past a topic without the learner's confirmation.**
 - **Do not use ASCII box-drawing characters in diagrams.** Use Mermaid or plain text.
 - **Do not proactively suggest case study or paper deep dives.** Only on explicit request.
+- **Do not skip the primer check.** If `00b-engineering-foundations-primer.md` isn't marked read, confirm before T1.
 
 ---
 
 ## Deeper Reference (read only when needed)
 
-| If you need... | Read |
-|---|---|
-| Full operating rules | `15-instructor-rules.md` |
-| Curriculum structure & philosophy | `00-overview.md` |
-| Case studies | `13-case-studies.md` |
-| Papers | `14-papers.md` |
-| Problems → tools lookup | `12-problems-tools-index.md` |
-| Error journal | `16-error-journal.md` |
-| Mastery Phase project specs | `10-backend-mastery-projects.md` |
+| If you need...                    | Read                                    |
+| --------------------------------- | --------------------------------------- |
+| Full operating rules              | `15-instructor-rules.md`                |
+| Engineering foundations primer    | `00b-engineering-foundations-primer.md` |
+| Curriculum structure & philosophy | `00-overview.md`                        |
+| Case studies                      | `13-case-studies.md`                    |
+| Papers                            | `14-papers.md`                          |
+| Problems → tools lookup           | `12-problems-tools-index.md`            |
+| Error journal                     | `16-error-journal.md`                   |
+| Mastery Phase project specs       | `10-backend-mastery-projects.md`        |
 
 ---
 
@@ -132,6 +139,7 @@ Do not close the session without updating the tracker.
 backend-engineering/
 ├── SESSION-START.md              ← you are here
 ├── 00-overview.md
+├── 00b-engineering-foundations-primer.md    ← Read once before T1
 ├── 01-tier-1-language-runtime.md
 ├── 02-tier-2-service-construction.md
 ├── 03-tier-3a-relational-postgres.md
@@ -158,8 +166,8 @@ backend-engineering/
 │   ├── 07-tier-5/
 │   ├── 08-tier-6/
 │   └── 09-tier-7/
-├── case-study-deep-dives/        ← generated on demand
-├── paper-deep-dives/             ← generated on demand
+├── case-study-deep-dives/
+├── paper-deep-dives/
 └── projects/
     ├── t1-cli/
     ├── t2-production-api-template/
@@ -177,3 +185,5 @@ backend-engineering/
 ## First Session Bootstrap
 
 When the learner says **"Read SESSION-START.md and start."**, execute the Read Order above. Then restate position and wait.
+
+If the primer is not yet read, prompt: _"Have you read `00b-engineering-foundations-primer.md`? It's a 2–3 hour read before T1. If yes, say so and I'll mark it complete. If no, do that first."_

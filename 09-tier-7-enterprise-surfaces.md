@@ -26,6 +26,7 @@ T7 is where "I built a service" becomes "I built a platform other teams can buil
 A gateway service that composes the earlier services behind REST, gRPC, GraphQL, and WebSocket interfaces, built on the T2 template and hardened in T6.
 
 **What it includes:**
+
 1. Composes `inventory-service` (T3a), `catalog-service` (T3b), `auth-service` (T4), `media-service` (T5)
 2. `docker-compose.yml` orchestrating all services + gateway
 3. REST edge API for clients
@@ -42,6 +43,7 @@ A gateway service that composes the earlier services behind REST, gRPC, GraphQL,
 **What it proves**: you can architect, build, and operate a multi-protocol platform.
 
 **Deliverables:**
+
 - `projects/t7-commerce-gateway/` — the gateway + orchestration
 - `.proto` files for internal services
 - GraphQL schema
@@ -325,7 +327,7 @@ flowchart TD
   `BUILD` · `Anchor: T7` · `Deps: T3a.9 money` · `Fails: JPY displayed as 100x; KWD loses precision` · `Interview: S` · `Artifact: currency.ts` · `Mistake: assuming 2 decimals for all currencies` · `Ref: T7.8 money` · `Theory 40/Practice 60` · `Local`
 
 - **Currency display formatting**: symbol position, spacing, localized separators
-  `BUILD` · `Anchor: T7` · `Deps: T7.8 currency` · `Fails: `1,000.00` vs `1.000,00` mismatch by locale` · `Interview: N` · `Artifact: currency-format.ts` · `Mistake: hardcoded `$` prefix` · `Ref: T7.8 number-format` · `Theory 30/Practice 70` · `Local`
+  `BUILD` · `Anchor: T7` · `Deps: T7.8 currency` · `Fails: `1,000.00`vs`1.000,00` mismatch by locale` · `Interview: N` · `Artifact: currency-format.ts` · `Mistake: hardcoded `$` prefix` · `Ref: T7.8 number-format` · `Theory 30/Practice 70` · `Local`
 
 - **Locale-aware number formatting**: `1,000` vs `1.000`, decimal separators
   `BUILD` · `Anchor: T7` · `Deps: T7.8 currency` · `Fails: numbers displayed wrong for locale` · `Interview: N` · `Artifact: number-format.ts` · `Mistake: `toLocaleString` with wrong default` · `Ref: T7.8 currency-format` · `Theory 30/Practice 70` · `Local`
@@ -392,6 +394,88 @@ flowchart TD
 
 ---
 
+## Why Not?
+
+### Why gRPC Over REST for Internal Services?
+
+- **REST + JSON** — universally understood, easy to debug (curl, Postman), works with any client. But chatty, verbose, no native streaming, no schema enforcement.
+- **gRPC** — Protobuf binary (5–10x smaller than JSON), HTTP/2 multiplexing, native streaming (unary, server, client, bidirectional), schema-driven (`.proto` files), codegen for clients. 5–10x faster than JSON REST for internal service-to-service calls.
+- **Choose REST** for public APIs, browser clients, simple CRUD, human debugging.
+- **Choose gRPC** for internal service-to-service, high-throughput, streaming, and when you want compile-time contract enforcement.
+
+### Why GraphQL Over REST?
+
+- **REST** — multiple endpoints, fixed response shapes. Over-fetching (client needs 2 of 20 fields) and under-fetching (client makes 3 requests).
+- **GraphQL** — one endpoint, client specifies fields, no over/under-fetching. Great for varied clients (mobile vs web vs third-party).
+- **Cost**: N+1 problem (solved with DataLoader), loss of native HTTP caching, gateway query parser CPU, schema federation complexity.
+- **Choose GraphQL** when you have many clients with different data needs. **Choose REST** for simple CRUD, public APIs, cache-heavy workloads.
+
+### Why DataLoader Over Just Batching by Hand?
+
+- **Hand batching** — you write `getUsersByIds(ids)` and call it in every resolver. Easy to forget, easy to break.
+- **DataLoader** — declarative batching, per-request cache, deduplication. It hooks into the GraphQL execution model and batches automatically.
+- **Rule**: any GraphQL resolver that fetches related entities uses DataLoader. No exceptions.
+
+### Why Meilisearch Over Elasticsearch?
+
+- **Elasticsearch** — extremely powerful, supports everything (fuzzy, facets, ML, analytics), but heavy. JVM tuning, cluster management, memory-hungry.
+- **Meilisearch** — lightweight, fast, typo-tolerant, easy setup. Missing advanced features (no full aggregations, no complex scoring pipelines).
+- **Choose Meilisearch** for small-to-medium search (<10M docs), simple filters, fast iteration.
+- **Choose Elasticsearch** for large scale, complex relevance tuning, aggregations, or when you need an ecosystem of plugins.
+- **Postgres full-text search** is a valid third option for very small scale — one fewer dependency.
+
+### Why `tenant_id` + RLS Over App-Level Filtering?
+
+- **App-level filtering** (`WHERE tenant_id = ?`) — every query must remember to filter. Miss one and you leak data across tenants. The worst kind of bug.
+- **Postgres RLS** — enforced at the database layer. Even if the app forgets, the DB won't return rows from another tenant. Fail-closed.
+- **Cost**: RLS adds a policy check per query (~5–10% overhead). Worth it.
+- **Rule**: multi-tenant systems use RLS. Always.
+
+### Why Postgres RLS Over Database-Per-Tenant (Silo)?
+
+- **Silo** (DB per tenant) — maximum isolation, but expensive (DB per customer), hard to migrate, hard to run analytics across tenants.
+- **Pool** (shared schema + `tenant_id` + RLS) — cheap, scalable, one DB to operate, analytics across tenants trivial. Risk: a policy bug affects all tenants.
+- **Hybrid**: pool by default; silo for enterprise customers with compliance or scale needs. Most systems start pool-only.
+
+### Why Locale-Aware Formatting Over `toLocaleString` Defaults?
+
+- **`toLocaleString()`** without options — uses the runtime's default locale, which may not match the user's. In a Node server, this is usually the OS locale, not the request locale.
+- **Explicit locale** — `new Intl.NumberFormat(locale, options).format(value)`. Numbers, currencies, dates, plurals — all formatted for the user's actual locale.
+- **Rule**: every formatting call passes an explicit locale derived from `Accept-Language`.
+
+### Why UTC Storage Over Local Time?
+
+- **UTC storage** — server stores everything in UTC. Conversion to local time happens at presentation.
+- **Local time storage** — breaks during DST transitions (skipped and repeated hours), timezone changes, and cross-region queries.
+- **Rule**: DB stores UTC. API returns ISO 8601 with timezone offset. Frontend converts. Non-negotiable for any service that touches multiple timezones.
+
+### Why `Sunset` / `Deprecation` Headers Over Just Documenting?
+
+- **Just documenting** — clients don't read docs. You deprecate v1, they keep using it, one day you remove it and break them.
+- **`Deprecation` header (RFC 9745)** — machine-readable signal on every response.
+- **`Sunset` header (RFC 8594)** — machine-readable date when the endpoint goes away.
+- **Cost**: one header. **Benefit**: clients can build automated deprecation alerts. Everyone wins.
+
+### Why `openapi-diff` in CI Over Manual Review?
+
+- **Manual review** — reviewers miss breaking changes. A field rename looks innocuous in a diff.
+- **`openapi-diff`** — compares v1 spec to v2 spec programmatically. Flags removed fields, type changes, new required fields, error code changes. Fails the build on breaking change.
+- **Rule**: no API change ships without an automated breaking-change check.
+
+### Why WebSockets Over SSE for Chat?
+
+- **SSE** — server → client only, simpler, works over HTTP/1.1. Good for one-way streams (notifications, live scores, progress).
+- **WebSockets** — bidirectional, full-duplex. Required for chat, collaboration, presence, anything where the client sends frequently.
+- **Choose SSE** when only the server initiates. **Choose WebSockets** when both sides send. Don't over-engineer one-way updates with WebSockets.
+
+### Why Redis Pub/Sub Over In-Memory Events for WebSocket Fan-Out?
+
+- **In-memory events** (`EventEmitter`) — work on one process. Break the moment you have 5 gateway instances.
+- **Redis Pub/Sub** — every gateway instance subscribes. Message published by one instance is broadcast to all. Cross-instance fan-out solved.
+- **Caveat**: Pub/Sub is fire-and-forget. No replay if a gateway was down. Use Redis Streams for durable real-time (consumer groups, replay).
+
+---
+
 ## Exit Criteria
 
 You've completed T7 when you can:
@@ -411,6 +495,7 @@ You've completed T7 when you can:
 **Depends on**: all previous tiers.
 
 **Depended on by**:
+
 - Backend Mastery projects — some (e-commerce, chat, notifications) reuse T7 patterns
 
 ---

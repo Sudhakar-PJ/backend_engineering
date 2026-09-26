@@ -7,6 +7,12 @@
 
 ---
 
+## 🚦 Primer Status
+
+- [ ] **Read `00b-engineering-foundations-primer.md`** (required before T1)
+
+---
+
 ## 📌 Current Position
 
 - **Tier**: `T1`
@@ -35,6 +41,7 @@
 ## Current Tier Detail: T1
 
 ### T1.1 — JavaScript Execution Model
+
 - [ ] Scopes & lexical environment
 - [ ] Closures
 - [ ] `this` binding
@@ -45,6 +52,7 @@
 - [ ] Iterators & iterables
 
 ### T1.2 — Async Model
+
 - [ ] Event loop phases
 - [ ] Microtasks vs macrotasks
 - [ ] Promises
@@ -54,12 +62,14 @@
 - [ ] Unhandled rejection & uncaught exception policy
 
 ### T1.3 — Error Handling Discipline
+
 - [ ] Sync vs async error propagation
 - [ ] Custom error classes
 - [ ] Error taxonomy
 - [ ] Stack traces & error context
 
 ### T1.4 — Memory & Garbage Collection
+
 - [ ] V8 heap structure
 - [ ] GC algorithms
 - [ ] Memory leak patterns in Node
@@ -67,6 +77,7 @@
 - [ ] `WeakRef` & `FinalizationRegistry`
 
 ### T1.5 — TypeScript Fundamentals
+
 - [ ] Primitive & literal types
 - [ ] Interfaces vs type aliases vs classes
 - [ ] Unions & intersections
@@ -75,6 +86,7 @@
 - [ ] Utility types
 
 ### T1.6 — Advanced TypeScript
+
 - [ ] Mapped types
 - [ ] Conditional types
 - [ ] `infer` keyword
@@ -85,6 +97,7 @@
 - [ ] `tsconfig` deep dive
 
 ### T1.7 — Node.js Runtime Fundamentals
+
 - [ ] libuv architecture
 - [ ] `process` object
 - [ ] Buffers
@@ -100,6 +113,7 @@
 - [ ] `inspector` protocol & debugging
 
 ### T1.8 — Integration: The T1-CLI Project
+
 - [ ] Streaming pipeline design
 - [ ] Concurrency limiting
 - [ ] Cancellation propagation
@@ -109,15 +123,32 @@
 
 ---
 
+## ADR Progress (from T2 onward)
+
+> Populated as each project is built. Minimum 3 ADRs per project.
+
+| Project                    | ADRs written | Status      |
+| -------------------------- | ------------ | ----------- |
+| t2-production-api-template | —            | Not started |
+| t3a-inventory-service      | —            | Not started |
+| t3b-catalog-service        | —            | Not started |
+| t3c-modules                | —            | Not started |
+| t4-auth-service            | —            | Not started |
+| t5-media-service           | —            | Not started |
+| t7-commerce-gateway        | —            | Not started |
+
+---
+
 ## Session Notes
 
 > The AI appends a new entry at the end of every session.
 
 ### `YYYY-MM-DD` — Template
-- **Completed**: 
-- **Stuck on**: 
-- **REVISIT logged**: 
-- **Next session starts at**: 
+
+- **Completed**:
+- **Stuck on**:
+- **REVISIT logged**:
+- **Next session starts at**:
 
 ---
 
@@ -126,7 +157,37 @@
 > One paragraph per tier, written by the AI when the tier is complete.
 
 ### T1
+
 _(pending completion)_
 
 ### T2
+
+_(pending)_
+
+### T3a
+
+_(pending)_
+
+### T3b
+
+_(pending)_
+
+### T3c
+
+_(pending)_
+
+### T4
+
+_(pending)_
+
+### T5
+
+_(pending)_
+
+### T6
+
+_(pending)_
+
+### T7
+
 _(pending)_

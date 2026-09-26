@@ -28,6 +28,7 @@ T4 is where "I added auth" becomes "I built a service that survives an attacker 
 A production-grade authentication and authorization service built on the T2 template, using T3a's Postgres layer and T3c's Redis modules.
 
 **What it includes:**
+
 1. User registration with email verification (OTP via Resend/Brevo free tier)
 2. Password hashing with Argon2id (tuned parameters)
 3. JWT access tokens + refresh token rotation (Redis-backed revocation)
@@ -46,6 +47,7 @@ A production-grade authentication and authorization service built on the T2 temp
 **What it proves**: you can build authentication that passes a security review.
 
 **Deliverables:**
+
 - `projects/t4-auth-service/` — full repo
 - OpenAPI spec for auth endpoints
 - README with threat model notes
@@ -114,10 +116,10 @@ flowchart TD
   `BUILD` · `Anchor: T4` · `Deps: T4.2 rotation, T3c sets` · `Fails: logout doesn't actually log out (token still valid until expiry)` · `Interview: Y` · `Artifact: revocation.ts` · `Mistake: blacklist grows forever (must TTL to token expiry)` · `Ref: T4.2 blacklist` · `Theory 40/Practice 60` · `Local`
 
 - **Token storage: cookies vs headers**: `HttpOnly`, `Secure`, `SameSite` for cookies; `Authorization: Bearer` for headers
-  `BUILD` · `Anchor: T4` · `Deps: T4.2 tokens` · `Fails: XSS steals tokens from `localStorage`; CSRF exploits cookie storage` · `Interview: Y` · `Artifact: storage.md` · `Mistake: storing tokens in `localStorage`` · `Ref: T4.3 CORS` · `Theory 40/Practice 60` · `Local`
+  `BUILD` · `Anchor: T4` · `Deps: T4.2 tokens` · `Fails: XSS steals tokens from `localStorage`; CSRF exploits cookie storage` · `Interview: Y` · `Artifact: storage.md` · `Mistake: storing tokens in `localStorage``·`Ref: T4.3 CORS`·`Theory 40/Practice 60`·`Local`
 
 - **JWT pitfalls**: `alg: none` attack, algorithm confusion, key ID (`kid`) injection
-  `KNOW` · `Anchor: T4` · `Deps: T4.2 signing` · `Fails: forged tokens via algorithm confusion` · `Interview: Y` · `Artifact: —` · `Mistake: accepting any algorithm in `verify`` · `Ref: T6` · `Theory 60/Practice 40` · `Local`
+  `KNOW` · `Anchor: T4` · `Deps: T4.2 signing` · `Fails: forged tokens via algorithm confusion` · `Interview: Y` · `Artifact: —` · `Mistake: accepting any algorithm in `verify``·`Ref: T6`·`Theory 60/Practice 40`·`Local`
 
 - **Session store pattern**: server-side session with Redis (opaque session ID)
   `BUILD` · `Anchor: T4` · `Deps: T3c.2 hashes` · `Fails: no server-side revocation for tokens` · `Interview: S` · `Artifact: session-store.ts` · `Mistake: storing sessions in memory (lost on restart)` · `Ref: T7` · `Theory 30/Practice 70` · `Local`
@@ -234,7 +236,7 @@ flowchart TD
   `BUILD` · `Anchor: T4` · `Deps: T4.6 helmet` · `Fails: SSL stripping attacks; downgrade to HTTP` · `Interview: S` · `Artifact: hsts.ts` · `Mistake: `preload` without testing subdomains` · `Ref: T6` · `Theory 40/Practice 60` · `Local`
 
 - **CORS done properly**: origin whitelist, `Access-Control-Allow-Credentials`, preflight cache via `Access-Control-Max-Age`
-  `BUILD` · `Anchor: T4` · `Deps: T2.2 Express` · `Fails: `*` origin allows any site to call your API with credentials` · `Interview: Y` · `Artifact: cors.ts` · `Mistake: `origin: true` reflects any origin` · `Ref: T7` · `Theory 40/Practice 60` · `Local`
+  `BUILD` · `Anchor: T4` · `Deps: T2.2 Express` · `Fails: `\*` origin allows any site to call your API with credentials` · `Interview: Y` · `Artifact: cors.ts` · `Mistake: `origin: true` reflects any origin` · `Ref: T7` · `Theory 40/Practice 60` · `Local`
 
 - **CSRF protection**: double-submit cookie, `SameSite=Lax/Strict`, custom header requirement
   `BUILD` · `Anchor: T4` · `Deps: T4.2 cookies` · `Fails: state-changing requests from malicious sites` · `Interview: Y` · `Artifact: csrf.ts` · `Mistake: disabling CSRF "because we use JWTs" (cookies still vulnerable)` · `Ref: T6` · `Theory 40/Practice 60` · `Local`
@@ -307,6 +309,72 @@ flowchart TD
 
 ---
 
+## Why Not?
+
+### Why Argon2id Instead of bcrypt / scrypt / PBKDF2?
+
+- **bcrypt** — battle-tested, widely deployed. But 72-byte input limit, and GPU-cracking resistance is weaker than memory-hard alternatives.
+- **scrypt** — memory-hard, good. But harder to tune, and Argon2 won the Password Hashing Competition (2015).
+- **PBKDF2** — old, weak against GPUs. Used by legacy systems.
+- **Argon2id** — memory-hard, resists GPU cracking, tunable memory/time/parallelism, winner of the PHC. The current best practice.
+- **When bcrypt is still OK**: existing systems with millions of bcrypt hashes and no migration plan. Migrate on login (verify bcrypt → rehash with Argon2id).
+
+### Why JWT Access + Refresh Instead of Just JWT?
+
+- **JWT-only** — one token with a long expiry. Problem: tokens can't be revoked before expiry. If stolen, the attacker has access until expiry.
+- **Access + refresh** — access token short-lived (15 min), refresh token long-lived (days/weeks) with rotation on use. If access is stolen, window is small. If refresh is stolen, rotation invalidates the old one and detects the theft.
+- **Cost**: two endpoints, rotation logic, refresh token storage. Worth it for any system that cares about token theft.
+
+### Why Refresh Token Rotation Instead of Static Refresh?
+
+- **Static refresh** — refresh token lives until manually revoked. If stolen, it works forever.
+- **Rotation** — every refresh issues a new refresh token and invalidates the old one. If an attacker steals and uses the refresh, the legitimate client's next attempt fails (old token already used) → theft detected.
+- **Requires**: server-side storage of used refresh token IDs, one-time-use enforcement.
+
+### Why JWT Over Sessions?
+
+- **Sessions** — server-side state, opaque session ID in a cookie. Revocation is trivial (delete the session). But requires shared session storage across instances.
+- **JWT** — stateless, no server lookup to verify. Scales horizontally trivially. But revocation is hard, and the token payload is public.
+- **When to use sessions**: internal apps, single-region, revocation is critical.
+- **When to use JWT**: public APIs, multi-service, distributed verification.
+- **The honest answer**: most teams use JWTs because they're fashionable, not because they need statelessness. Sessions + Redis is simpler and revocable.
+
+### Why OAuth2 Authorization Code + PKCE Instead of Password Grant?
+
+- **Password grant** — deprecated in OAuth 2.1. Sends password to the client app (which shouldn't see it).
+- **Implicit flow** — deprecated. Token in URL fragment, exposed to browser history and referer headers.
+- **Authorization Code + PKCE** — the modern standard. No password exposure, no token in URLs, resistant to code interception. This is the only correct flow for browser and mobile clients.
+
+### Why TOTP Instead of SMS OTP?
+
+- **SMS OTP** — vulnerable to SIM-swap attacks, SS7 interception, and carrier breaches. Also not free at scale.
+- **TOTP** — shared secret + time-based code, no network, works offline. Google Authenticator / Authy compatible.
+- **Passkeys (WebAuthn)** — phishing-resistant, best UX, but more complex to implement and requires user device support.
+
+### Why RBAC + ABAC Instead of Just RBAC?
+
+- **Pure RBAC** — roles map to permissions. Simple, fast, easy to reason about. But role explosion when every rule needs a role (`editor_of_own_team`, `editor_of_others_team`, `admin_of_dept`, ...).
+- **ABAC** — policies evaluated against attributes (user, resource, context). Handles "edit own resource" cases that RBAC can't express.
+- **Rule**: RBAC for coarse-grained permissions. ABAC for context-dependent rules. Most systems need both.
+
+### Why Rate Limit on Auth Endpoints Specifically?
+
+- **Login / OTP / password reset / MFA verification** — all brute-forceable.
+- **Per-IP alone** is insufficient (botnets). Rate limit per identifier (email, phone) too.
+- **Lockout** — after N failed attempts, exponential backoff. Never permanent lockouts (attacker DoSes a user by locking them out).
+
+### Why `crypto.timingSafeEqual` for HMACs?
+
+- **`===`** — short-circuits on first differing byte. An attacker measuring response time can determine the correct bytes one at a time (timing attack). This works even over the network at scale.
+- **`timingSafeEqual`** — constant-time comparison. No timing leak.
+
+### Why Helmet Instead of Manual Headers?
+
+- **Manual headers** — you'll forget one. Miss one and you have an XSS hole or clickjacking vulnerability.
+- **Helmet** — one call, sensible defaults for CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, and more. Tune from defaults, don't build from scratch.
+
+---
+
 ## Exit Criteria
 
 You've completed T4 when you can:
@@ -327,6 +395,7 @@ You've completed T4 when you can:
 **Depends on**: T1 (async, TS, crypto), T2 (template), T3a (users table), T3c (session-store, rate-limiter).
 
 **Depended on by**:
+
 - T5 — background jobs with user context
 - T6 — production ops (secret scanning, security review)
 - T7 — `auth-service` is imported into `commerce-gateway`

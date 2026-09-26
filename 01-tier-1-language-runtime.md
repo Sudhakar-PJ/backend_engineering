@@ -275,6 +275,26 @@ T1 doesn't produce a service. It produces **fluency**. Later tiers assume you ha
 
 ---
 
+## Why Not?
+
+### Why Not Choose a Different Runtime?
+
+- **Bun** — faster startup and native TypeScript, but smaller ecosystem, less battle-tested at production scale, and not a drop-in for every Node API. For learning runtime internals, Node teaches you the mechanics that Bun abstracts.
+- **Deno** — stricter security defaults and first-class TypeScript, but the npm ecosystem interop is still maturing and enterprise adoption is lower.
+- **Go / Rust / Java** — different concurrency models entirely. Go uses goroutines + channels, Java uses thread pools, Rust uses async runtimes. Node's single-threaded event loop is what makes it a distinctive teaching target.
+
+### Why Not TypeScript Alternatives?
+
+- **Flow** — effectively unmaintained; the ecosystem moved to TypeScript.
+- **JSDoc-only typing** — works for small scripts, falls apart on codebases with generics, mapped types, and complex inference.
+- **ReScript / Elm / PureScript** — compile-to-JS languages that trade ergonomics for soundness. Overkill for backend services where pragmatism beats purity.
+
+### Why Not Skip the Runtime Depth?
+
+- **"I'll learn it when I need it"** — you'll hit event-loop bugs, memory leaks, and stream backpressure issues in real work, and without a mental model you'll debug them by guessing. Building the model now is cheaper than learning it under production pressure.
+
+---
+
 ## Exit Criteria
 
 You've completed T1 when you can:

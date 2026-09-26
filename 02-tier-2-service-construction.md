@@ -27,6 +27,7 @@ T2 is where "I can write a server" becomes "I can write a service a senior engin
 A reusable Express + TypeScript scaffold that becomes the base of every project after T2 (T3a onward).
 
 **What it includes:**
+
 1. Layered architecture: `config → routes → controllers → services → repositories`
 2. Zod-validated configuration with fail-fast startup
 3. Zod-validated request bodies, params, query strings
@@ -42,6 +43,7 @@ A reusable Express + TypeScript scaffold that becomes the base of every project 
 **What it proves**: you can construct a service that a senior engineer would not need to rewrite.
 
 **Deliverables:**
+
 - `projects/t2-production-api-template/` — full repo scaffold
 - README with architecture diagram
 - At least 3 endpoints demonstrating the full stack (e.g., `POST /items`, `GET /items/:id`, `GET /items`)
@@ -216,7 +218,7 @@ flowchart TD
   `BUILD` · `Anchor: T2` · `Deps: T2.2 Express, T1.2 async` · `Fails: async errors bypass Express error middleware` · `Interview: Y` · `Artifact: async-handler.ts` · `Mistake: writing try/catch in every controller` · `Ref: T4` · `Theory 20/Practice 80` · `Local`
 
 - **Operational vs programmer errors**: which to catch, which to crash on
-  `BUILD` · `Anchor: T2` · `Deps: T2.6 error taxonomy` · `Fails: swallowing bugs that should crash; crashing on transient failures` · `Interview: Y` · `Artifact: error-policy.md` · `Mistake: catching everything with a bare `try {} catch {}`` · `Ref: T5, T6` · `Theory 50/Practice 50` · `Local`
+  `BUILD` · `Anchor: T2` · `Deps: T2.6 error taxonomy` · `Fails: swallowing bugs that should crash; crashing on transient failures` · `Interview: Y` · `Artifact: error-policy.md` · `Mistake: catching everything with a bare `try {} catch {}``·`Ref: T5, T6`·`Theory 50/Practice 50`·`Local`
 
 - **`unhandledRejection` / `uncaughtException` handlers**: last-resort logging and process restart
   `BUILD` · `Anchor: T2` · `Deps: T1.2 process handlers` · `Fails: silent crashes; no logs when the process dies` · `Interview: Y` · `Artifact: process-handlers.ts` · `Mistake: trying to "recover" from an uncaught exception` · `Ref: T6` · `Theory 40/Practice 60` · `Local`
@@ -264,6 +266,58 @@ flowchart TD
 
 ---
 
+## Why Not?
+
+### Why Express Instead of Fastify / Koa / Hono / NestJS?
+
+- **Fastify** — faster and schema-first, but Express teaches you middleware chains, manual error propagation, and layered routing without hiding them. Fastify's plugin model is excellent, but a beginner can't appreciate why it exists without first understanding Express's constraints.
+- **Koa** — elegant async middleware, but a much smaller ecosystem and community. Worth learning after Express, not instead of it.
+- **Hono** — edge-first framework, brilliant for Cloudflare Workers, but the abstraction hides too much of the request lifecycle for a first learning pass.
+- **NestJS** — opinionated, DI-driven, decorator-heavy. Excellent in production, but it hides the mechanics (DI containers, exception filters, validation pipes) that this tier's whole point is to build manually.
+
+**The rule**: build the mechanics by hand first. Reach for the abstraction when you understand what it abstracts.
+
+### Why Zod Instead of Joi / Yup / class-validator / TypeBox?
+
+- **Joi** — mature, but runtime-only. No TypeScript type inference from schemas.
+- **Yup** — popular in React forms, weaker in backend inference, less type-safe than Zod.
+- **class-validator** — decorator-based, requires classes for DTOs, works well with Nest but not with plain Express + interfaces.
+- **TypeBox** — fastest runtime validation, JSON Schema-based, excellent for OpenAPI generation, but less ergonomic for composition.
+- **Zod** — best balance: type inference, discriminated unions, composability, mature ecosystem. This is the current pragmatic default for Express + TypeScript.
+
+### Why Pino Instead of Winston / Bunyan / console.log?
+
+- **Winston** — more configurable, but slower and heavier. Custom transports and formatters add indirection that hurts performance.
+- **Bunyan** — effectively abandoned. Pino is its spiritual successor.
+- **console.log** — never in production. Unstructured, unparseable, no levels, no context.
+- **Pino** — fastest JSON logger in Node, structured by default, redaction built-in, child loggers for request context.
+
+### Why Manual DI Instead of a DI Container (tsyringe, InversifyJS, Awilix)?
+
+- **Containers** are powerful but opaque. They resolve dependencies via reflection or decorators, which obscures wiring. In practice, manual constructor DI handles 95% of cases and is far easier to debug.
+- **Containers only become necessary** when you have hundreds of services across many modules with complex lifecycle scopes. Most backend services never hit that.
+- Build manual DI first. Graduate to a container only when the manual wiring becomes genuinely painful.
+
+### Why Kysely Instead of Prisma / Drizzle / TypeORM?
+
+- **Prisma** — ORM with its own schema DSL, generated client, and runtime engine. Ergonomic for CRUD, but hides SQL and adds a large runtime.
+- **TypeORM** — legacy, complex, decorator-heavy, weak TypeScript inference.
+- **Drizzle** — schema-first, close to SQL, good inference, but a smaller community than Prisma or Kysely.
+- **Kysely** — type-safe query builder, zero runtime overhead, SQL-first (you write SQL-shaped code), no code generation. This is what you want when you've already learned raw SQL (T3a) and want type safety without an ORM.
+
+### Why RFC 7807 for Errors Instead of Custom Shapes?
+
+- **Custom shapes** — work for one service, but consumers must learn each API's error format. Debugging becomes per-client.
+- **RFC 7807 (Problem Details)** — standardized envelope (`type`, `title`, `status`, `detail`, `instance`), machine-parseable, widely adopted. Clients parse once, work everywhere.
+
+### Why OpenAPI Instead of Hand-Written Docs / Postman-Only?
+
+- **Hand-written docs** — drift from code within weeks. Guaranteed to be wrong.
+- **Postman collections** — useful for manual testing, not a machine-readable contract.
+- **OpenAPI** — the only format that produces both docs and generated clients and CI diffing. It's the industry standard for a reason.
+
+---
+
 ## Exit Criteria
 
 You've completed T2 when you can:
@@ -284,6 +338,7 @@ You've completed T2 when you can:
 **Depends on**: T1 (all of it).
 
 **Depended on by**:
+
 - T3a — uses the template + adds repository layer
 - T3b — uses the template + adds document repository
 - T3c — uses the template + adds caching/rate-limit modules

@@ -16,9 +16,10 @@ You then execute the Read Order in `SESSION-START.md`. That file defines the exa
 1. Read `SESSION-START.md` first.
 2. Read this file (`15-instructor-rules.md`).
 3. Read `11-progress-tracker.md`.
-4. Read the current tier file.
-5. Read the current topic's course-material file, if it exists.
-6. Restate position and wait for confirmation.
+4. **Check the primer status** (see `SESSION-START.md` Step 4).
+5. Read the current tier file.
+6. Read the current topic's course-material file, if it exists.
+7. Restate position and wait for confirmation.
 
 Do not assume where the learner is. Always verify against the tracker.
 
@@ -86,8 +87,8 @@ One paragraph: what it is, why it exists, where it's used in production at scale
 
 1. Present the full course-material content **in chat**.
 2. **Write the same content to disk** at `course-materials/[tier-folder]/[topic-slug].md`.
-3. Tell the learner: *"Written to `course-materials/01-tier-1/01-01-closures.md`."*
-4. Ask: *"Understood, or want me to re-explain?"*
+3. Tell the learner: _"Written to `course-materials/01-tier-1/01-01-closures.md`."_
+4. Ask: _"Understood, or want me to re-explain?"_
 5. Stop and wait.
 
 Do not proceed to the next topic until the learner confirms.
@@ -111,13 +112,13 @@ If the learner says **"I don't understand X"**, the Stuck Protocol activates (Ru
 When the learner says "I don't understand X":
 
 1. **Re-explain** using a different analogy or a concrete code example.
-2. **Offer a smaller scope**: *"Do you want just the minimum to move on, or the full depth?"*
+2. **Offer a smaller scope**: _"Do you want just the minimum to move on, or the full depth?"_
 3. If the learner chooses to move forward without full mastery, **write `REVISIT` entry to `16-error-journal.md`** with:
    - Topic
    - Deferred at (date)
    - Re-engage at (which tier uses it next)
    - Notes
-4. Confirm the write: *"Logged `REVISIT` for [topic] in `16-error-journal.md`."*
+4. Confirm the write: _"Logged `REVISIT` for [topic] in `16-error-journal.md`."_
 
 REVISIT topics are re-engaged when the next tier uses them. Never silently abandoned.
 
@@ -169,18 +170,21 @@ When the learner says "that's enough for today" (or similar):
    - Update the **Current Position** block (tier, subsection, topic, next).
    - Update **Last Updated** date.
    - Add a new **Session Notes** entry (date, completed, stuck, REVISIT logged, next session starts at).
-2. **Show the learner a diff**: e.g., *"Updated `11-progress-tracker.md`: T1.2 topic 2 → complete. Next session starts at T1.2 topic 3 (Promises)."*
+2. **Show the learner a diff**: e.g., _"Updated `11-progress-tracker.md`: T1.2 topic 2 → complete. Next session starts at T1.2 topic 3 (Promises)."_
 3. **Update `16-error-journal.md`** if any bugs, failure modes, or REVISIT items occurred during the session. Show the diff.
 4. **If a tier is complete**, write a one-paragraph **tier retrospective** at the bottom of the tier file. Show the diff.
-5. **Confirm all writes**: list the files touched and the changes made.
+5. **If a project is complete**, verify the `docs/adr/` folder exists with at least 3 ADRs (see Rule 10). If missing, remind the learner.
+6. **Confirm all writes**: list the files touched and the changes made.
 
 Do not close a session without updating the tracker.
 
 ---
 
-## 10. Project README Requirement
+## 10. Project README + ADR Requirement
 
-Every project deliverable includes a `README.md` with:
+Every project deliverable includes:
+
+### `README.md`
 
 - One-paragraph description
 - Architecture diagram (Mermaid)
@@ -189,7 +193,40 @@ Every project deliverable includes a `README.md` with:
 - Known limitations
 - What you'd do differently at 10x scale (one paragraph)
 
-This applies to T1-CLI onward. You may write the README to disk when the project is complete, or guide the learner to write it (their choice — ask once at project start).
+### `docs/adr/` — Architecture Decision Records
+
+At least **3 ADRs per project**, documenting the significant decisions made. Each ADR follows this format:
+
+```
+# ADR-XXX: [Decision Title]
+
+## Status
+Accepted | Superseded | Deprecated
+
+## Context
+What problem were we solving? What constraints existed?
+
+## Decision
+What did we decide, and why?
+
+## Consequences
+- Positive: ...
+- Negative: ...
+- Alternatives rejected: ...
+```
+
+**Examples of decisions that need ADRs**:
+
+- Framework choice (Express vs Fastify)
+- Query layer (Kysely vs Prisma vs raw SQL)
+- Database (Postgres vs MongoDB)
+- Auth strategy (JWT vs sessions)
+- Queue (BullMQ vs RabbitMQ)
+- Any non-obvious trade-off made during the project
+
+**When to write ADRs**: as the decision is made during the build, not retroactively. If the learner forgets, prompt them at project completion.
+
+This applies to T2's template onward.
 
 ---
 
@@ -217,7 +254,7 @@ You operate on files in this repo. Rules:
   - Error journal → `16-error-journal.md` (Stuck Protocol or session end)
   - Tier retrospective → bottom of the current tier file (tier completion only)
   - Project files → `projects/[project-folder]/`
-- **Never modify** `SESSION-START.md`, `00-overview.md`, `15-instructor-rules.md`, or any tier file structure without being explicitly asked.
+- **Never modify** `SESSION-START.md`, `00-overview.md`, `00b-engineering-foundations-primer.md`, `15-instructor-rules.md`, or any tier file structure without being explicitly asked.
 - **Never create files outside the repo's structure.** No random notes, no unsolicited READMEs, no "scratch" files.
 
 ---
@@ -232,15 +269,16 @@ You operate on files in this repo. Rules:
 
 ## 14. Deeper Reference (read only when needed)
 
-| If you need... | Read |
-|---|---|
-| Session flow | `SESSION-START.md` |
-| Curriculum structure & philosophy | `00-overview.md` |
-| Case studies | `13-case-studies.md` |
-| Papers | `14-papers.md` |
-| Problems → tools lookup | `12-problems-tools-index.md` |
-| Error journal | `16-error-journal.md` |
-| Mastery Phase project specs | `10-backend-mastery-projects.md` |
+| If you need...                    | Read                                    |
+| --------------------------------- | --------------------------------------- |
+| Session flow                      | `SESSION-START.md`                      |
+| Engineering foundations           | `00b-engineering-foundations-primer.md` |
+| Curriculum structure & philosophy | `00-overview.md`                        |
+| Case studies                      | `13-case-studies.md`                    |
+| Papers                            | `14-papers.md`                          |
+| Problems → tools lookup           | `12-problems-tools-index.md`            |
+| Error journal                     | `16-error-journal.md`                   |
+| Mastery Phase project specs       | `10-backend-mastery-projects.md`        |
 
 ---
 
@@ -251,9 +289,10 @@ Case studies and papers have **short entries** in `13-case-studies.md` and `14-p
 ### Trigger
 
 Only when the learner explicitly asks. Examples:
-- *"Go deeper on Instagram's sharding strategy."*
-- *"Deep dive on the Segment Kafka incident."*
-- *"I want a full breakdown of the Dapper paper."*
+
+- _"Go deeper on Instagram's sharding strategy."_
+- _"Deep dive on the Segment Kafka incident."_
+- _"I want a full breakdown of the Dapper paper."_
 
 **Do not proactively suggest deep dives.** Not at tier completion, not when a topic matches, not ever. The learner asks; you respond.
 
@@ -263,33 +302,10 @@ Only when the learner explicitly asks. Examples:
 # [Case Study / Paper Name]
 
 ## 1. 💡 Context & Why It Matters
-- Who, when, what problem.
-- Why this case study / paper is worth studying now.
-- One-paragraph summary of the outcome.
-
 ## 2. 🔬 Technical Deep Dive
-- The architecture / design as it existed before.
-- The specific problem they hit (with numbers if available).
-- The decision-making process.
-- The solution they built (with diagrams where helpful).
-- Key technical details that aren't in the short entry.
-
 ## 3. 💻 Code / Schema / Config Excerpts
-- Real excerpts from the source where publicly available.
-- Annotated explanations of why each excerpt works.
-- If no public source exists, a reconstruction with annotations.
-
 ## 4. ⚠️ Trade-offs, Failure Modes & What Went Wrong
-- What trade-offs they accepted.
-- What failed along the way.
-- What they'd do differently (if published).
-- Common misconceptions about this case study.
-
 ## 5. 🎯 What You Can Apply
-- Specific patterns you can reuse in your own projects.
-- What NOT to copy (context matters).
-- Cross-references to curriculum topics.
-- 1–3 further reading links.
 ```
 
 ### Workflow
@@ -303,12 +319,13 @@ Only when the learner explicitly asks. Examples:
    - Generate the deep-dive file using the 5-part format.
    - Present the full content in chat.
    - Write it to disk.
-   - Tell the learner: *"Written to `case-study-deep-dives/instagram-postgres-sharding.md`."*
-5. Ask: *"Understood, or go deeper on another?"*
+   - Tell the learner: _"Written to `case-study-deep-dives/instagram-postgres-sharding.md`."_
+5. Ask: _"Understood, or go deeper on another?"_
 
 ### Slug convention
 
 Lowercase, hyphenated, descriptive:
+
 - `instagram-postgres-sharding.md`
 - `segment-kafka-incident.md`
 - `stripe-idempotency-architecture.md`
@@ -320,3 +337,15 @@ Not `case1.md`, not `CaseStudy_Instagram.md`.
 ### Length target
 
 400–800 lines. Longer than the short entry, shorter than a full paper. Enough to be genuinely useful, not so much that it's a book.
+
+---
+
+## 16. Primer Handling
+
+`00b-engineering-foundations-primer.md` is read **once**, before T1, and never revisited.
+
+- If the tracker shows the primer is not yet marked read, and the learner asks to start T1: prompt them to read it first.
+- Once marked read, never re-serve it or re-check.
+- The primer is not a tier — no per-topic tracking, no deep-dive generation, no artifact.
+
+The primer exists to prevent T1+ topics from being mysterious. Once read, it's done.

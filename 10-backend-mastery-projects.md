@@ -49,6 +49,7 @@ A project is not "done" until it ships.
 **Brief**: Build a service that accepts a long URL and returns a short code. Redirecting the short code should 302 to the original. Track click counts per code.
 
 **Capabilities checklist**:
+
 - `POST /shorten` with a long URL, returns short code
 - `GET /:code` redirects to the original URL (302)
 - `GET /:code/analytics` returns click count and last-clicked timestamp
@@ -69,6 +70,7 @@ A project is not "done" until it ships.
 **Brief**: A service that stores feature flags and evaluates them for users. Supports percentage rollouts and user segment targeting. Real-time flag updates via WebSocket.
 
 **Capabilities checklist**:
+
 - CRUD for feature flags (create, read, update, delete)
 - Evaluation endpoint: `POST /evaluate` with `{ flag, userId, attributes }` → `{ enabled: boolean }`
 - Percentage rollout (deterministic per user)
@@ -89,6 +91,7 @@ A project is not "done" until it ships.
 **Brief**: A service that dispatches notifications across email, SMS, and in-app channels with user preferences, rate limits, and retries.
 
 **Capabilities checklist**:
+
 - `POST /notifications` with `{ userId, channel, template, payload }`
 - User preference enforcement (opt-out per channel)
 - Multi-channel: email (Resend/Brevo), SMS (mock), in-app (Redis pub/sub)
@@ -110,6 +113,7 @@ A project is not "done" until it ships.
 **Brief**: Build an OAuth2 + OIDC identity provider from scratch. Other services integrate with it for authentication and authorization.
 
 **Capabilities checklist**:
+
 - User registration with email verification
 - Argon2id password hashing
 - OAuth2 Authorization Code Flow with PKCE
@@ -133,6 +137,7 @@ A project is not "done" until it ships.
 **Brief**: A payment service that accepts charges, handles retries, supports refunds, and reconciles with a mock external PSP. Money-safe, idempotent, webhook-driven.
 
 **Capabilities checklist**:
+
 - `POST /charges` with amount, currency, idempotency key
 - Money stored as integer minor units; ledger uses `NUMERIC`
 - Double-entry ledger (debits = credits always)
@@ -155,6 +160,7 @@ A project is not "done" until it ships.
 **Brief**: Build the backend for an e-commerce platform. This is the composition project — it reuses every capability you've built.
 
 **Capabilities checklist**:
+
 - User auth (reuse IdP patterns or embed T4 auth)
 - Product catalog with search (Postgres + Meilisearch/Elasticsearch sync via outbox)
 - Inventory management (stock, reservations, transfers)
@@ -269,6 +275,49 @@ Then optional:
 11. **Search Engine** (from scratch)
 12. **Object Storage** (from scratch)
 13. **API Gateway** (from scratch)
+
+---
+
+## Why Not? (Mastery Phase Decisions)
+
+### Why Build the Core 6 Before Optional 7?
+
+- **Core 6 cover every major capability**: caching, queues, auth, payments, composition. If you only built one project and stopped, these 6 would be the answer.
+- **Optional 7 are domain extensions**: content, real-time, media, search internals, storage internals, gateway internals. Valuable for portfolios and interview prep, but they repeat capabilities you've already proven.
+- **The order matters**: URL Shortener → Feature Flag → Notification → Identity → Payments → E-commerce. Each builds on skills from the previous. E-commerce is the composition capstone; it should be last.
+
+### Why Reuse the T2 Scaffold Instead of Starting Fresh?
+
+- **Starting fresh** — you rewrite routing, validation, logging, error handling, DI, config for every project. That's 20+ hours of boilerplate per project, none of it teaching you anything new.
+- **Reusing the scaffold** — you start every project with the architecture already in place. 100% of your time goes into the domain-specific problem.
+- **In real jobs**: every team has a service template. You don't rewrite it per project. Reusing the T2 scaffold mirrors how real engineering works.
+- **The Mastery Phase tests judgment, not typing speed**. The scaffold frees you to exercise judgment.
+
+### Why Blind Builds (10D) Over Guided Builds?
+
+- **Guided builds** — hints at every step. You end up following a script.
+- **Blind builds** — you get a one-paragraph brief and a capabilities checklist. You design and build it yourself. The AI only reveals the reference _after_ you're done.
+- **Why blind**: the entire point of Mastery is proving you can build without hand-holding. Guided builds prove nothing.
+- **Cost**: higher risk of building something wrong. But the gap analysis is where the learning happens.
+
+### Why Reference Solutions Are Not "The Correct Answer"?
+
+- **Reference** — one plausible design with documented trade-offs. Not the only correct one.
+- **Your design** — may be better or worse on different axes. The gap analysis identifies differences; you decide which approach was right for your constraints.
+- **Rule**: never treat the reference as authoritative. Treat it as a second opinion. Your design is judged by whether it makes coherent trade-offs, not whether it matches the reference.
+
+### Why Not Stop at Core 6?
+
+- **You can** — Core 6 completes the curriculum. Optional 7 is genuinely optional.
+- **Why you might continue**: portfolio depth, domain-specific practice, or interview prep for a specific company (e.g., if interviewing at Figma, build the Collaborative Editor).
+- **Why you might stop**: diminishing returns. After Core 6, you've proven every capability. Optional 7 gives marginal practice, not new skills.
+
+### Why Each Project Must Include ADRs, Benchmarks, and README?
+
+- **READMEs** — architectural reasoning, trade-offs, limitations. The artifact interviewers look at.
+- **Benchmarks** — `k6`/`autocannon` results. Proves you can measure performance, not just claim it.
+- **ADRs** — the "why" behind every significant decision. Senior-engineer signal.
+- **Without these**, a project is code without context. With them, it's a portfolio piece.
 
 ---
 

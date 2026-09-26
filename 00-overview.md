@@ -16,7 +16,27 @@ A hands-on path from "I can write JavaScript" to "I can design, build, test, sec
 
 ---
 
-## 2. The Three-Repo Structure
+## 2. Before You Begin — Read the Primer First
+
+Before T1, read `00b-engineering-foundations-primer.md`.
+
+It's a 2–3 hour primer covering prerequisite mental models:
+
+- Process vs Program vs Thread
+- Stack vs Heap memory
+- CPU, cores, and syscalls
+- Signals (`SIGTERM`, `SIGINT`) and exit codes
+- stdio and file descriptors
+- Environment variables
+- Binary and dynamic linking (awareness)
+
+Not a tier. Not tracked. Just read once, confirm you understand, then move to T1.
+
+Without this primer, later topics like "non-blocking I/O," "memory leak," and "graceful shutdown" have no foundation.
+
+---
+
+## 3. The Three-Repo Structure
 
 ```mermaid
 flowchart TD
@@ -28,7 +48,7 @@ flowchart TD
 
 ---
 
-## 3. The 7 Tiers + Mastery Phase
+## 4. The 7 Tiers + Mastery Phase
 
 | Tier        | Capability                                                                                                       | Anchored Project                                                  |
 | ----------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
@@ -45,9 +65,11 @@ flowchart TD
 
 **T3 is split into three sub-tiers** because Postgres, MongoDB, and Redis are three distinct data paradigms, each deserving a dedicated learning pass.
 
+**Before T1**: Read `00b-engineering-foundations-primer.md` (2–3 hours).
+
 ---
 
-## 4. The 11-Tag Legend
+## 5. The 11-Tag Legend
 
 Every topic carries these tags. Format is compact — two lines per topic.
 
@@ -73,7 +95,7 @@ Every topic carries these tags. Format is compact — two lines per topic.
 
 ---
 
-## 5. Architecture Composition Map
+## 6. Architecture Composition Map
 
 Every tier produces something that a later tier consumes. Nothing is built in isolation.
 
@@ -109,7 +131,7 @@ flowchart TD
 
 ---
 
-## 6. IN / OUT Boundary
+## 7. IN / OUT Boundary
 
 ### ✅ IN (Backend Engineering)
 
@@ -150,7 +172,7 @@ flowchart TD
 
 ---
 
-## 7. The Stack
+## 8. The Stack
 
 | Layer             | Primary                                           | Awareness / Alternatives       |
 | ----------------- | ------------------------------------------------- | ------------------------------ |
@@ -182,7 +204,7 @@ flowchart TD
 
 ---
 
-## 8. Local Docker vs Free Cloud Tier
+## 9. Local Docker vs Free Cloud Tier
 
 Every tier file will tag data/infra topics with `Local` or `Cloud-optional`.
 
@@ -193,17 +215,17 @@ Every tier file will tag data/infra topics with `Local` or `Cloud-optional`.
 
 ---
 
-## 9. The Spine Rule
+## 10. The Spine Rule
 
 **Nothing can be skipped.** Every topic in every tier is engaged with, in order.
 
 Treatment depth varies by mode:
 
-| Mode      | Treatment                                                                                          |
-| --------- | -------------------------------------------------------------------------------------------------- |
-| **BUILD** | Full 5-part course-material file + you build the artifact.                                         |
+| Mode      | Treatment                                                                                        |
+| --------- | ------------------------------------------------------------------------------------------------ |
+| **BUILD** | Full 5-part course-material file + you build the artifact.                                       |
 | **USE**   | Short course-material file (Intuition + Usage + Failure Modes). You use the tool in the project. |
-| **KNOW**  | Explainer paragraph. Confirm understanding. No course-material file. No build.                    |
+| **KNOW**  | Explainer paragraph. Confirm understanding. No course-material file. No build.                   |
 
 **Stuck?** Stuck Protocol applies: re-explain with a new analogy, offer smaller scope, log as `REVISIT` in the error journal if you choose to move forward.
 
@@ -211,18 +233,65 @@ Treatment depth varies by mode:
 
 ---
 
-## 10. Case Studies & Seminal Papers
+## 11. Architecture Decision Records (ADRs)
+
+From T2 onward, every project ships with a `docs/adr/` folder containing Architecture Decision Records.
+
+**What is an ADR?** A short markdown file documenting a significant architectural decision. Format:
+
+```
+# ADR-001: Use Kysely instead of Prisma
+
+## Status
+Accepted
+
+## Context
+We need type-safe database access from TypeScript. Options: Prisma (ORM), Kysely (query builder), raw SQL.
+
+## Decision
+Use Kysely.
+
+## Consequences
+- Positive: type-safe queries, thin layer over SQL, no code generation step.
+- Negative: less magic than Prisma, must write joins manually.
+- Alternative rejected: Prisma (heavy runtime, opinionated schema DSL).
+```
+
+**Why it matters**:
+
+- ADRs are senior-engineer signal — every serious engineering org uses them.
+- They force you to articulate _why_ you chose a tool, not just use it.
+- They're portfolio gold: a repo with ADRs shows architectural reasoning.
+
+**Which decisions need ADRs?**
+
+- Framework choice (Express vs Fastify)
+- Query layer choice (Kysely vs Prisma)
+- Database choice (Postgres vs MongoDB)
+- Auth strategy (JWT vs sessions)
+- Queue choice (BullMQ vs RabbitMQ)
+- Any non-obvious trade-off you made
+
+Every project gets at least 3 ADRs. More if the project made more decisions.
+
+Full rule in `15-instructor-rules.md` Rule 10.
+
+---
+
+## 12. Case Studies & Seminal Papers
 
 Case studies and seminal papers are **separate documents**, not embedded in tier files.
 
-- **`13-case-studies.md`** — enterprise/MAANG case studies, organized by tier, each with a short "why this matters" note and a pointer to the relevant tier topic.
-- **`14-papers.md`** — seminal systems papers, organized by tier, with reading-time budgets and "why this matters today" annotations.
+- **`13-case-studies.md`** — enterprise/MAANG case studies, organized by tier.
+- **`14-papers.md`** — seminal systems papers, organized by tier.
 
 **Placement rule**:
-- If a case study or paper reinforces a **backend engineering topic** (Postgres, idempotency, queues, caching, API design, tracing, incident response) → lives in `13-` or `14-`, cross-referenced from the relevant tier file.
-- If it reinforces **distributed systems theory** (consensus, sharding algorithms, multi-region, CRDTs) → lives in **Repo 2** (System Design), cross-referenced from Repo 1 if applicable.
+
+- Backend engineering topics → live here.
+- Distributed systems theory → live in Repo 2.
 
 **Attach pattern**: each tier file ends with a two-line footer:
+
 ```
 ## Case Studies & Papers
 See `13-case-studies.md § T<tier>` and `14-papers.md § T<tier>`.
@@ -230,21 +299,22 @@ See `13-case-studies.md § T<tier>` and `14-papers.md § T<tier>`.
 
 ### Deep Dives (on-demand)
 
-Short entries in `13-case-studies.md` and `14-papers.md` are just that — short. When the learner asks "go deeper on X," the AI generates a full deep-dive file:
+Short entries in the vaults are just that — short. When you ask "go deeper on X," the AI generates a deep-dive file:
 
 - **Case study deep dives** → `case-study-deep-dives/[slug].md`
 - **Paper deep dives** → `paper-deep-dives/[slug].md`
 
-Deep dives follow a 5-part structure (Context, Technical Deep Dive, Code Excerpts, Trade-offs, What You Can Apply) and are 400–800 lines each. They are **never proactively suggested** — only generated when explicitly requested. See `15-instructor-rules.md` Rule 15 for full details.
+Deep dives are **never proactively suggested** — only generated when explicitly requested. See `15-instructor-rules.md` Rule 15.
 
 ---
 
-## 11. Repo Files
+## 13. Repo Files
 
 ```
 backend-engineering/
-├── SESSION-START.md              ← ENTRY POINT. Read this first every session.
+├── SESSION-START.md
 ├── 00-overview.md
+├── 00b-engineering-foundations-primer.md    ← Read once before T1
 ├── 01-tier-1-language-runtime.md
 ├── 02-tier-2-service-construction.md
 ├── 03-tier-3a-relational-postgres.md
@@ -262,36 +332,23 @@ backend-engineering/
 ├── 15-instructor-rules.md
 ├── 16-error-journal.md
 ├── course-materials/
-│   ├── 01-tier-1/
-│   ├── 02-tier-2/
-│   ├── 03-tier-3a/
-│   ├── 04-tier-3b/
-│   ├── 05-tier-3c/
-│   ├── 06-tier-4/
-│   ├── 07-tier-5/
-│   ├── 08-tier-6/
-│   └── 09-tier-7/
-├── case-study-deep-dives/        ← generated on demand
-├── paper-deep-dives/             ← generated on demand
+├── case-study-deep-dives/
+├── paper-deep-dives/
 └── projects/
-    ├── t1-cli/
-    ├── t2-production-api-template/
-    ├── t3a-inventory-service/
-    ├── t3b-catalog-service/
-    ├── t3c-modules/
-    ├── t4-auth-service/
-    ├── t5-media-service/
-    ├── t7-commerce-gateway/
-    └── docker-compose.yml
 ```
 
 **The ENTRY POINT is `SESSION-START.md`.** Every session begins there.
 
 ---
 
-## 12. How to Use This Repo
+## 14. How to Use This Repo
 
-You are working with an AI instructor (Antigravity) that reads and writes files directly. There is no copy-pasting between sessions.
+You are working with an AI instructor (Antigravity) that reads and writes files directly.
+
+**First time only:**
+
+1. Read `00b-engineering-foundations-primer.md`.
+2. Confirm you understand the six concepts in its final section.
 
 **Every session:**
 
@@ -300,21 +357,20 @@ You are working with an AI instructor (Antigravity) that reads and writes files 
 3. The AI reads `SESSION-START.md`, `15-instructor-rules.md`, `11-progress-tracker.md`, and the current tier file.
 4. The AI restates your position and waits for confirmation.
 5. You confirm. Session begins.
-6. When done, say **"that's enough for today."** The AI updates the tracker, error journal, and tier retrospective (if tier complete), then confirms what was written.
+6. When done, say **"that's enough for today."** The AI updates the tracker, error journal, and tier retrospective (if tier complete).
 
-**You don't paste anything.** The AI reads from disk. The AI writes course materials, case study deep dives, tracker updates, and error journal entries directly to disk and shows you a diff.
-
-**Reference files** (`00-overview.md`, `12-problems-tools-index.md`, `13-case-studies.md`, `14-papers.md`) — the AI reads these only when relevant, per `SESSION-START.md`.
+**You don't paste anything.** The AI reads from disk. The AI writes course materials, tracker updates, and error journal entries directly to disk and shows you a diff.
 
 ---
 
-## 13. What "Done" Looks Like
+## 15. What "Done" Looks Like
 
 You've completed this curriculum when:
 
 - All T1–T7 topics (BUILD, USE, KNOW) are engaged with in order
 - T7's `commerce-gateway` composes the earlier services and runs end-to-end
 - Backend Mastery **Core 6** projects are built, tested, containerized, and deployed
+- Every project has a `docs/adr/` folder with at least 3 ADRs
 - You can pick up any unfamiliar backend problem and know which tools to reach for — without looking them up
 
 Optional 7 Mastery projects are exactly that: optional. Stop at Core 6 and the curriculum is complete.

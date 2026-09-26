@@ -27,6 +27,7 @@ T5 is where "my service works when everything is healthy" becomes "my service su
 A media handling service built on the T2 template, using T3a's Postgres, T3b's MongoDB for metadata, and T3c's Redis modules.
 
 **What it includes:**
+
 1. Direct-to-MinIO uploads via presigned URLs (no server memory bottleneck)
 2. Multipart chunked upload for large files with chunk assembly
 3. Metadata DB in Postgres (UUID, S3 key, ETag, size, checksum, status state machine)
@@ -43,6 +44,7 @@ A media handling service built on the T2 template, using T3a's Postgres, T3b's M
 **What it proves**: you can build a service that handles long-running work, external dependencies, and scale — without dropping requests.
 
 **Deliverables:**
+
 - `projects/t5-media-service/` — full repo
 - `docker-compose.yml` with Postgres, Redis, MinIO, and the service
 - Benchmark: upload throughput + job processing throughput
@@ -356,6 +358,84 @@ flowchart TD
 
 ---
 
+## Why Not?
+
+### Why BullMQ Over Kafka / RabbitMQ / SQS / NATS?
+
+- **Kafka** — durable log, replayable, extremely high throughput. But heavy: Zookeeper/KRaft cluster, partitions, consumer group rebalancing. Overkill for internal job queues. Choose Kafka when you need durable replayable event streams across services.
+- **RabbitMQ** — full AMQP broker, complex routing. Excellent for cross-service messaging. Adds operational burden.
+- **SQS** — AWS-managed, no ops, but paid (against the zero-spend guarantee) and AWS-locked.
+- **NATS** — lightweight pub/sub. Great for fire-and-forget messaging, weaker for durable job queues.
+- **BullMQ** — Redis-backed, TypeScript-native, atomic via Lua, feature-rich (priorities, delayed jobs, repeatable, DLQ), no extra infrastructure if you already run Redis. Best fit for in-service background work in a Node stack.
+
+**Rule**: BullMQ for internal jobs. Kafka for durable cross-service event streams. RabbitMQ when you need complex routing. SQS only if you're already on AWS.
+
+### Why BullMQ Over pg-boss (Postgres-backed Queue)?
+
+- **pg-boss** — no additional infrastructure if you already have Postgres. Every job is a DB row. Simple, transactional.
+- **BullMQ** — Redis-backed, much higher throughput. But adds Redis dependency.
+- **Choose pg-boss when**: job volume is low (hundreds/min), you want one fewer dependency, and transactional job creation (job created in same DB transaction as the triggering write) is valuable.
+- **Choose BullMQ when**: high throughput, delayed/repeatable jobs, priorities, or you're already using Redis.
+
+### Why Exponential Backoff + Jitter Over Fixed Retry Delay?
+
+- **Fixed delay** — every retry after a failure hits the downstream service at the same time. Synchronized retries hammer a struggling service.
+- **Exponential backoff** — waits grow: 1s, 2s, 4s, 8s. Reduces load but still synchronized.
+- **Jitter** — randomizes the wait: 0–1s, 0–2s, 0–4s, etc. Desynchronizes retries. This is the difference between "the service recovers" and "the retry storm takes it down again."
+- **Rule**: exponential backoff with **full jitter** is the default for any retry.
+
+### Why Circuit Breaker Over Just Retry?
+
+- **Retry alone** — hammers a dead dependency. Every request retries N times, adding load instead of relieving it.
+- **Circuit breaker** — after N consecutive failures, stop calling the dependency for a cooldown period. Half-open state tests recovery with limited traffic. Closed state resumes normal operation.
+- **The three states**: closed (healthy) → open (failing, don't call) → half-open (test with single request) → closed.
+- **Rule**: circuit breaker wraps every external call. Retry inside the breaker, not around it.
+
+### Why Bulkhead Isolation Over a Shared Pool?
+
+- **Shared thread pool / connection pool** — one slow dependency consumes all capacity. A dead third-party API takes down your entire service.
+- **Bulkhead** — separate pools per dependency. Slow dependency degrades only its own pool. The rest of the service keeps working.
+- **This is not optional** at scale. Any service that calls multiple external dependencies needs bulkheads.
+
+### Why `AbortController` Over Manual Cancellation Flags?
+
+- **Manual flags** — you check a `cancelled` boolean before each operation. Easy to forget, easy to leak.
+- **`AbortSignal`** — native, propagates through fetch, streams, timers, and DB drivers. Cancellation is cooperative and typed. No leaked work.
+- **Rule**: every external call takes an `AbortSignal`. Every request handler creates one tied to the client disconnect.
+
+### Why Graceful Shutdown Over `process.exit()`?
+
+- **`process.exit()`** — kills in-flight requests, drops responses, closes DB connections abruptly. Rolling deploy = user-visible errors.
+- **Graceful shutdown** — stop accepting new requests, drain in-flight, close resources, exit cleanly. Rolling deploy = zero user impact.
+- **Requires**: `SIGTERM` handler, connection drain logic, K8s `preStop` hook to delay the signal until endpoints update.
+
+### Why Cache-Aside Over Write-Through / Write-Behind?
+
+- **Cache-aside** — read from cache, on miss read from DB and populate. Write to DB, invalidate cache. Simple, resilient to cache failure.
+- **Write-through** — write to cache and DB synchronously. Slower writes, cache is always warm.
+- **Write-behind** — write to cache, async flush to DB. Fast writes, risk of data loss if cache fails before flush.
+- **Cache-aside is the pragmatic default**. Write-through for read-heavy, consistency-critical. Write-behind almost never (data-loss risk).
+
+### Why Single-Flight Over Just Longer TTL?
+
+- **Longer TTL** — fewer cache misses, but stale data longer. Doesn't solve the stampede when a hot key does expire.
+- **Single-flight** — when N concurrent requests miss, only one fetches; the others wait for the result. Prevents the DB from being hit N times.
+- **Combine**: short TTL + single-flight + TTL jitter. Belt and suspenders.
+
+### Why Presigned URLs Over Uploading Through Your Server?
+
+- **Server upload** — server buffers the whole file. Memory blowup at scale, bandwidth cost on your infra.
+- **Presigned URL** — client uploads directly to S3/MinIO. Your server never touches the bytes. Scales infinitely (S3 handles it).
+- **Requires**: client-side flow change, callback/webhook to signal upload completion, metadata DB state machine (`PENDING_UPLOAD → UPLOADED → FAILED`).
+
+### Why Graceful Degradation Over "Fail Loud"?
+
+- **Fail loud** — every error becomes a 500. Users see broken features that could have degraded.
+- **Graceful degradation** — serve stale cache if DB is down; return a default if a recommendation service fails; disable non-critical features under load. Users get a partial product, not a broken one.
+- **Rule**: every external dependency has a fallback. The fallback might be stale data, empty data, or a queued retry — never "fail everything."
+
+---
+
 ## Exit Criteria
 
 You've completed T5 when you can:
@@ -376,6 +456,7 @@ You've completed T5 when you can:
 **Depends on**: T1 (async, cancellation, streams), T2 (template), T3a (metadata DB), T3b (optional metadata store), T3c (cache, rate limiter, locks), T4 (idempotency keys, secrets).
 
 **Depended on by**:
+
 - T6 — production ops (worker scaling, queue monitoring)
 - T7 — `media-service` is imported into `commerce-gateway`
 

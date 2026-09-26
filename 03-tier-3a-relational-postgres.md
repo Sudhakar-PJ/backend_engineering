@@ -27,6 +27,7 @@ T3a is where "I can use a database" becomes "I can design and operate a Postgres
 A Postgres-backed inventory service built on the T2 `production-api-template`.
 
 **What it includes:**
+
 1. Relational schema: `products`, `inventory`, `stock_movements`, `warehouses`
 2. Money-safe columns: prices as integer minor units, `NUMERIC` for ledger entries
 3. Migrations with Kysely (`up`/`down`, expand-contract)
@@ -41,6 +42,7 @@ A Postgres-backed inventory service built on the T2 `production-api-template`.
 **What it proves**: you can build a data layer that handles real-world correctness (money, concurrency, migrations) without corruption.
 
 **Deliverables:**
+
 - `projects/t3a-inventory-service/` — full repo
 - SQL schema + migrations
 - Repository layer with Kysely
@@ -94,13 +96,13 @@ flowchart TD
   `BUILD` · `Anchor: T3a` · `Deps: T3a.1 schema` · `Fails: basic CRUD bugs; wrong WHERE clauses deleting too much` · `Interview: Y` · `Artifact: crud.sql` · `Mistake: forgetting `RETURNING` (extra round-trip)` · `Ref: T3a.3` · `Theory 20/Practice 80` · `Local`
 
 - **Joins**: inner, left, right, full, cross, self — and when NOT to use joins
-  `BUILD` · `Anchor: T3a` · `Deps: T3a.2 CRUD` · `Fails: wrong join type silently drops or duplicates rows` · `Interview: Y` · `Artifact: joins.sql` · `Mistake: using a `LEFT JOIN` where an `INNER JOIN` was intended (or vice versa)` · `Ref: T3a.3` · `Theory 40/Practice 60` · `Local`
+  `BUILD` · `Anchor: T3a` · `Deps: T3a.2 CRUD` · `Fails: wrong join type silently drops or duplicates rows` · `Interview: Y` · `Artifact: joins.sql` · `Mistake: using a `LEFT JOIN`where an`INNER JOIN` was intended (or vice versa)` · `Ref: T3a.3` · `Theory 40/Practice 60` · `Local`
 
 - **Subqueries**: scalar, `IN`, `EXISTS`, correlated; when subquery vs join
   `BUILD` · `Anchor: T3a` · `Deps: T3a.2 joins` · `Fails: correlated subqueries executing per row (N+1 in disguise)` · `Interview: Y` · `Artifact: subqueries.sql` · `Mistake: not comparing plans for subquery vs join` · `Ref: T3a.8` · `Theory 40/Practice 60` · `Local`
 
 - **Aggregates & `GROUP BY` / `HAVING`**: `SUM`, `AVG`, `COUNT`, `MIN`, `MAX`, `FILTER`
-  `BUILD` · `Anchor: T3a` · `Deps: T3a.2 CRUD` · `Fails: wrong aggregation scope; filtering after aggregation` · `Interview: Y` · `Artifact: aggregates.sql` · `Mistake: confusing `WHERE` (pre-aggregation) and `HAVING` (post-aggregation)` · `Ref: T3a.4` · `Theory 30/Practice 70` · `Local`
+  `BUILD` · `Anchor: T3a` · `Deps: T3a.2 CRUD` · `Fails: wrong aggregation scope; filtering after aggregation` · `Interview: Y` · `Artifact: aggregates.sql` · `Mistake: confusing `WHERE`(pre-aggregation) and`HAVING` (post-aggregation)` · `Ref: T3a.4` · `Theory 30/Practice 70` · `Local`
 
 - **CTEs**: `WITH`, recursive CTEs, materialization behavior
   `BUILD` · `Anchor: T3a` · `Deps: T3a.2 subqueries` · `Fails: unreadable nested subqueries; recursive queries without CTEs are painful` · `Interview: S` · `Artifact: ctes.sql` · `Mistake: assuming CTEs are always materialized (Postgres changed this)` · `Ref: T3a.8` · `Theory 40/Practice 60` · `Local`
@@ -112,7 +114,7 @@ flowchart TD
   `BUILD` · `Anchor: T3a` · `Deps: T3a.2 CRUD` · `Fails: race conditions between check-then-insert` · `Interview: Y` · `Artifact: upsert.sql` · `Mistake: assuming `ON CONFLICT` requires a unique constraint (it does)` · `Ref: T4, T5` · `Theory 30/Practice 70` · `Local`
 
 - **`RETURNING` clause**: get inserted/updated values back in a single round-trip
-  `BUILD` · `Anchor: T3a` · `Deps: T3a.2 CRUD` · `Fails: extra SELECT after every write` · `Interview: S` · `Artifact: returning.sql` · `Mistake: not knowing `RETURNING` works on `INSERT`, `UPDATE`, and `DELETE`` · `Ref: T4` · `Theory 20/Practice 80` · `Local`
+  `BUILD` · `Anchor: T3a` · `Deps: T3a.2 CRUD` · `Fails: extra SELECT after every write` · `Interview: S` · `Artifact: returning.sql` · `Mistake: not knowing `RETURNING`works on`INSERT`, `UPDATE`, and `DELETE``·`Ref: T4`·`Theory 20/Practice 80`·`Local`
 
 **Deep-dive candidates**: window functions, CTEs vs subqueries — generate on demand.
 
@@ -154,13 +156,13 @@ flowchart TD
   `KNOW` · `Anchor: T3a` · `Deps: T3a.2 SQL` · `Fails: no index on WHERE/ORDER BY columns → slow queries` · `Interview: Y` · `Artifact: —` · `Mistake: indexing every column "just in case"` · `Ref: T3a.8` · `Theory 60/Practice 40` · `Local`
 
 - **Single-column vs composite indexes**: leftmost-prefix rule
-  `BUILD` · `Anchor: T3a` · `Deps: T3a.4 index` · `Fails: composite index unused because query order doesn't match prefix` · `Interview: Y` · `Artifact: composite-index.sql` · `Mistake: assuming `(a, b)` index helps queries on `b` alone` · `Ref: T3a.8` · `Theory 40/Practice 60` · `Local`
+  `BUILD` · `Anchor: T3a` · `Deps: T3a.4 index` · `Fails: composite index unused because query order doesn't match prefix` · `Interview: Y` · `Artifact: composite-index.sql` · `Mistake: assuming `(a, b)`index helps queries on`b` alone` · `Ref: T3a.8` · `Theory 40/Practice 60` · `Local`
 
 - **Partial indexes**: index only rows matching a condition (e.g., `WHERE deleted_at IS NULL`)
   `BUILD` · `Anchor: T3a` · `Deps: T3a.4 composite` · `Fails: full index bloated with rows you never query` · `Interview: S` · `Artifact: partial-index.sql` · `Mistake: forgetting the partial predicate in queries` · `Ref: T3a.6` · `Theory 40/Practice 60` · `Local`
 
 - **Expression / functional indexes**: index `LOWER(email)`, `date_trunc('day', created_at)`
-  `BUILD` · `Anchor: T3a` · `Deps: T3a.4 partial` · `Fails: case-insensitive lookups scan full table` · `Interview: S` · `Artifact: expression-index.sql` · `Mistake: indexing `LOWER(email)` but querying `email = ?`` · `Ref: T3a.6` · `Theory 40/Practice 60` · `Local`
+  `BUILD` · `Anchor: T3a` · `Deps: T3a.4 partial` · `Fails: case-insensitive lookups scan full table` · `Interview: S` · `Artifact: expression-index.sql` · `Mistake: indexing `LOWER(email)`but querying`email = ?``·`Ref: T3a.6`·`Theory 40/Practice 60`·`Local`
 
 - **JSONB GIN indexes**: query inside JSON columns efficiently
   `BUILD` · `Anchor: T3a` · `Deps: T3a.4 index` · `Fails: JSONB queries always scan; slow performance` · `Interview: S` · `Artifact: jsonb-index.sql` · `Mistake: using `->>` without a matching expression index` · `Ref: T3a.6` · `Theory 40/Practice 60` · `Local`
@@ -190,10 +192,10 @@ flowchart TD
   `BUILD` · `Anchor: T3a` · `Deps: T3a.5 Kysely` · `Fails: hand-maintained types drift from actual schema` · `Interview: S` · `Artifact: db-types.ts` · `Mistake: not using a schema type generator` · `Ref: T3a.6` · `Theory 30/Practice 70` · `Local`
 
 - **Joins in Kysely**: `innerJoin`, `leftJoin`, type-safe join results
-  `BUILD` · `Anchor: T3a` · `Deps: T3a.5 types` · `Fails: join result types incorrect; missing fields at runtime` · `Interview: S` · `Artifact: joins.kysely.ts` · `Mistake: selecting `*` and getting unexpected columns` · `Ref: T3a.7` · `Theory 30/Practice 70` · `Local`
+  `BUILD` · `Anchor: T3a` · `Deps: T3a.5 types` · `Fails: join result types incorrect; missing fields at runtime` · `Interview: S` · `Artifact: joins.kysely.ts` · `Mistake: selecting `\*` and getting unexpected columns` · `Ref: T3a.7` · `Theory 30/Practice 70` · `Local`
 
 - **Transactions in Kysely**: `db.transaction().execute(async (trx) => {...})`
-  `BUILD` · `Anchor: T3a` · `Deps: T3a.3 transactions` · `Fails: transactions not scoped correctly; leaks` · `Interview: Y` · `Artifact: transactions.kysely.ts` · `Mistake: passing the outer `db` instead of the transaction `trx` into nested calls` · `Ref: T3a.7` · `Theory 30/Practice 70` · `Local`
+  `BUILD` · `Anchor: T3a` · `Deps: T3a.3 transactions` · `Fails: transactions not scoped correctly; leaks` · `Interview: Y` · `Artifact: transactions.kysely.ts` · `Mistake: passing the outer `db`instead of the transaction`trx` into nested calls` · `Ref: T3a.7` · `Theory 30/Practice 70` · `Local`
 
 - **Migrations with Kysely**: `up`/`down` functions, migration runner, schema versioning
   `BUILD` · `Anchor: T3a` · `Deps: T3a.5 Kysely` · `Fails: schema drift between environments; manual ALTER statements` · `Interview: Y` · `Artifact: migrations/` · `Mistake: editing migrations after they've been applied` · `Ref: T3a.6` · `Theory 30/Practice 70` · `Local`
@@ -295,10 +297,10 @@ flowchart TD
 ### T3a.9 — Data Correctness: Money, Unicode, Nulls
 
 - **Money as integer minor units**: cents as `BIGINT`, no floats ever
-  `BUILD` · `Anchor: T3a` · `Deps: T3a.2 SQL` · `Fails: `0.1 + 0.2 !== 0.3`; totals off by pennies; audits fail` · `Interview: Y` · `Artifact: money.ts` · `Mistake: using `FLOAT` or `MONEY` for currency` · `Ref: T7` · `Theory 40/Practice 60` · `Local`
+  `BUILD` · `Anchor: T3a` · `Deps: T3a.2 SQL` · `Fails: `0.1 + 0.2 !== 0.3`; totals off by pennies; audits fail` · `Interview: Y` · `Artifact: money.ts` · `Mistake: using `FLOAT`or`MONEY` for currency` · `Ref: T7` · `Theory 40/Practice 60` · `Local`
 
 - **`NUMERIC` for ledger entries**: arbitrary precision when cents aren't enough
-  `BUILD` · `Anchor: T3a` · `Deps: T3a.9 integer money` · `Fails: high-precision financial calculations lossy` · `Interview: S` · `Artifact: ledger-schema.sql` · `Mistake: using `NUMERIC` for everything (slower than `BIGINT`)` · `Ref: T7` · `Theory 40/Practice 60` · `Local`
+  `BUILD` · `Anchor: T3a` · `Deps: T3a.9 integer money` · `Fails: high-precision financial calculations lossy` · `Interview: S` · `Artifact: ledger-schema.sql` · `Mistake: using `NUMERIC`for everything (slower than`BIGINT`)` · `Ref: T7` · `Theory 40/Practice 60` · `Local`
 
 - **Banker's rounding (half-even)**: correct rounding for financial totals
   `BUILD` · `Anchor: T3a` · `Deps: T3a.9 NUMERIC` · `Fails: systematic rounding bias over millions of transactions` · `Interview: S` · `Artifact: rounding.ts` · `Mistake: using JS `Math.round` (half-up, biased)` · `Ref: T7` · `Theory 40/Practice 60` · `Local`
@@ -322,7 +324,7 @@ flowchart TD
   `KNOW` · `Anchor: T3a` · `Deps: T3a.9 Unicode` · `Fails: strings sort wrong in non-English locales` · `Interview: N` · `Artifact: —` · `Mistake: using default collation for multi-locale apps` · `Ref: T7` · `Theory 60/Practice 40` · `Local`
 
 - **SQL three-valued logic**: `NULL = NULL` is `UNKNOWN`, not `TRUE`
-  `BUILD` · `Anchor: T3a` · `Deps: T3a.2 SQL` · `Fails: `WHERE x = NULL` returns zero rows; surprising query results` · `Interview: Y` · `Artifact: null-semantics.sql` · `Mistake: using `= NULL` instead of `IS NULL`` · `Ref: T7` · `Theory 50/Practice 50` · `Local`
+  `BUILD` · `Anchor: T3a` · `Deps: T3a.2 SQL` · `Fails: `WHERE x = NULL` returns zero rows; surprising query results` · `Interview: Y` · `Artifact: null-semantics.sql` · `Mistake: using `= NULL`instead of`IS NULL``·`Ref: T7`·`Theory 50/Practice 50`·`Local`
 
 - **`null` vs `undefined` vs missing across JSON/Postgres/TS**: consistency rules
   `BUILD` · `Anchor: T3a` · `Deps: T3a.9 null logic` · `Fails: DB sees `null`, JSON omits field, TS sees `undefined` — bugs` · `Interview: S` · `Artifact: null-consistency.ts` · `Mistake: no convention; every layer handles nulls differently` · `Ref: T7` · `Theory 40/Practice 60` · `Local`
@@ -356,6 +358,60 @@ flowchart TD
 
 ---
 
+## Why Not?
+
+### Why PostgreSQL Instead of MySQL / MariaDB / SQL Server / SQLite?
+
+- **MySQL** — fine, but Postgres has richer types (JSONB, arrays, ranges, enums, UUID, `NUMERIC` precision, `ILIKE`, full-text search), better standards compliance, better concurrency (MVCC done properly), and a richer extension ecosystem.
+- **MariaDB** — MySQL fork, similar trade-offs, smaller momentum in greenfield.
+- **SQL Server** — excellent but commercial, Windows-centric historically, and licence costs make it a poor fit for a zero-spend curriculum.
+- **SQLite** — brilliant for embedded, but single-writer. Not suitable for a multi-instance backend service.
+
+**When Postgres isn't right**: read-heavy KV workloads (Redis, Dynamo), wide-column time-series (Cassandra, TimescaleDB), full-text at scale (Elasticsearch), document-shaped data (MongoDB). Choose based on workload shape, not preference.
+
+### Why Kysely Instead of Prisma / Drizzle?
+
+See T2's "Why Not?" section. Same reasoning applies here. Kysely in T3a assumes you already learned raw SQL — it's the "typed SQL" layer, not an ORM.
+
+### Why Explicit Transactions Instead of ORM Auto-Transactions?
+
+- ORM-managed transactions hide when commits happen. You lose track of what's atomic.
+- Explicit `BEGIN` / `COMMIT` / `ROLLBACK` (or `db.transaction()` in Kysely) makes transaction boundaries visible in code. This is non-negotiable for money-correct systems.
+- ORMs encourage long transactions (because they're eager to batch queries). Long transactions hold locks. Short explicit transactions are the discipline.
+
+### Why Optimistic Locking Over Pessimistic as Default?
+
+- **Optimistic** (version column + retry): scales well, no locks held, works for low-contention writes.
+- **Pessimistic** (`SELECT ... FOR UPDATE`): correct for high-contention critical sections, but holds locks and blocks readers.
+- **Default to optimistic**. Use pessimistic only when the contention is proven and the critical section is short. Then combine with `SKIP LOCKED` for queue-style access.
+
+### Why Integer Minor Units (Cents) Instead of `NUMERIC` for Money?
+
+- **`BIGINT` cents** — fast, exact, no floating-point risk, works with any currency (multiply by 10^n for storage). Downside: need a currency code alongside.
+- **`NUMERIC(19,4)`** — exact, arbitrary precision, good for ledger entries where sub-cent precision is required (interest calculations, FX).
+- **`FLOAT` / `DOUBLE`** — never for money. `0.1 + 0.2 !== 0.3`. Silent precision loss.
+- **Rule**: `BIGINT` cents for transactional amounts; `NUMERIC` for ledger/interest/tax calculations. Never floats.
+
+### Why Expand-Contract Migrations Instead of Renaming/Dropping in Place?
+
+- **Direct rename / drop** — acquires `ACCESS EXCLUSIVE` lock on the table. On a large table, that means minutes to hours of downtime.
+- **Expand-contract** — add nullable → dual-write → backfill in batches → cut over → drop old. Zero downtime, rollback-safe at every step.
+- The cost is a few extra deploys and more code. The benefit is you never take the service down for a migration.
+
+### Why Raw SQL First, Then Kysely?
+
+- **Raw SQL first** — you learn what the database actually does. Joins, aggregates, window functions, `EXPLAIN` output — all become concrete.
+- **Kysely second** — you learn the typed layer that composes the SQL you already understand.
+- **Skipping raw SQL** — you'll be stuck when Kysely can't express a query and you have to drop to raw SQL anyway.
+
+### Why Testcontainers Instead of Mocked DB?
+
+- **Mocked DB** — tests pass, production fails. Mock drift is invisible until it's an incident.
+- **SQLite in-memory** — different engine, different behavior. Fails on Postgres-specific features (`JSONB`, `RETURNING`, `ON CONFLICT`).
+- **Testcontainers** — real Postgres, real migrations, real queries. Tests catch what production would catch.
+
+---
+
 ## Exit Criteria
 
 You've completed T3a when you can:
@@ -376,6 +432,7 @@ You've completed T3a when you can:
 **Depends on**: T1 (async, error handling), T2 (template, config, logging).
 
 **Depended on by**:
+
 - T3b — Mongo patterns mirror relational ones
 - T4 — auth service stores users, sessions, refresh tokens in Postgres
 - T5 — background jobs update Postgres state, read/write through repositories

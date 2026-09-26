@@ -26,6 +26,7 @@ T3b is where "Mongo is schemaless, so anything goes" becomes "Mongo is schema-fl
 A MongoDB-backed product catalog service built on the T2 `production-api-template`.
 
 **What it includes:**
+
 1. Document schema design: products, categories, reviews (embedded vs referenced decisions documented)
 2. Aggregation pipeline for product listing with filters and facets
 3. Compound, multikey, text, and sparse indexes with `.explain()` verification
@@ -39,6 +40,7 @@ A MongoDB-backed product catalog service built on the T2 `production-api-templat
 **What it proves**: you can design document schemas that actually fit document workloads — not relational schemas forced into documents.
 
 **Deliverables:**
+
 - `projects/t3b-catalog-service/` — full repo
 - Document schema files + JSON Schema validators
 - Aggregation pipelines with `.explain()` reports
@@ -93,7 +95,7 @@ flowchart TD
   `BUILD` · `Anchor: T3b` · `Deps: T3b.1 embedding` · `Fails: retrieved entire object when only one field was needed` · `Interview: Y` · `Artifact: embedded.ts` · `Mistake: embedding large or frequently-changing data` · `Ref: T3b.5` · `Theory 40/Practice 60` · `Local`
 
 - **Referenced documents**: `$lookup` for one-to-many and many-to-many
-  `BUILD` · `Anchor: T3b` · `Deps: T3b.1 referencing` · `Fails: N+1 queries when fetching references without `$lookup`` · `Interview: Y` · `Artifact: referenced.ts` · `Mistake: referencing when embedding would be simpler` · `Ref: T3b.3` · `Theory 40/Practice 60` · `Local`
+  `BUILD` · `Anchor: T3b` · `Deps: T3b.1 referencing` · `Fails: N+1 queries when fetching references without `$lookup``·`Interview: Y`·`Artifact: referenced.ts`·`Mistake: referencing when embedding would be simpler`·`Ref: T3b.3`·`Theory 40/Practice 60`·`Local`
 
 - **Denormalization patterns**: duplicating data for read performance (with update strategies)
   `BUILD` · `Anchor: T3b` · `Deps: T3b.2 referenced` · `Fails: stale duplicated data; consistency bugs` · `Interview: Y` · `Artifact: denormalization.md` · `Mistake: duplicating without a strategy for updates` · `Ref: T3b.5` · `Theory 50/Practice 50` · `Local`
@@ -117,7 +119,7 @@ flowchart TD
 ### T3b.3 — Queries & Aggregation Pipeline
 
 - **Basic queries**: `find`, `findOne`, `insertOne`, `insertMany`, `updateOne`, `updateMany`, `deleteOne`, `deleteMany`
-  `BUILD` · `Anchor: T3b` · `Deps: T3b.2 schema` · `Fails: basic CRUD bugs; wrong filters updating too much` · `Interview: S` · `Artifact: crud.ts` · `Mistake: using `updateMany` when `updateOne` was intended` · `Ref: T3b.4` · `Theory 20/Practice 80` · `Local`
+  `BUILD` · `Anchor: T3b` · `Deps: T3b.2 schema` · `Fails: basic CRUD bugs; wrong filters updating too much` · `Interview: S` · `Artifact: crud.ts` · `Mistake: using `updateMany`when`updateOne` was intended` · `Ref: T3b.4` · `Theory 20/Practice 80` · `Local`
 
 - **Query operators**: `$eq`, `$gt`, `$in`, `$regex`, `$exists`, `$elemMatch`, `$and`, `$or`
   `BUILD` · `Anchor: T3b` · `Deps: T3b.3 basic queries` · `Fails: filter bugs; missing data; wrong results` · `Interview: Y` · `Artifact: operators.ts` · `Mistake: using `$regex` without anchoring (slow scans)` · `Ref: T3b.4` · `Theory 30/Practice 70` · `Local`
@@ -171,7 +173,7 @@ flowchart TD
   `BUILD` · `Anchor: T3b` · `Deps: T3b.4 single-field` · `Fails: duplicate users/emails/products` · `Interview: Y` · `Artifact: unique.ts` · `Mistake: app-side uniqueness check (race conditions)` · `Ref: T4` · `Theory 30/Practice 70` · `Local`
 
 - **Reading `.explain("executionStats")`**: `IXSCAN` vs `COLLSCAN`, `totalDocsExamined` vs `nReturned`
-  `BUILD` · `Anchor: T3b` · `Deps: T3b.4 indexes` · `Fails: can't diagnose why a query is slow` · `Interview: Y` · `Artifact: explain.md` · `Mistake: looking only at `nReturned`, ignoring `totalDocsExamined`` · `Ref: T3b.5` · `Theory 40/Practice 60` · `Local`
+  `BUILD` · `Anchor: T3b` · `Deps: T3b.4 indexes` · `Fails: can't diagnose why a query is slow` · `Interview: Y` · `Artifact: explain.md` · `Mistake: looking only at `nReturned`, ignoring `totalDocsExamined``·`Ref: T3b.5`·`Theory 40/Practice 60`·`Local`
 
 - **Index intersection & covered queries**: when Mongo combines indexes or answers from index alone
   `KNOW` · `Anchor: T3b` · `Deps: T3b.4 compound` · `Fails: unnecessary index fetches` · `Interview: N` · `Artifact: —` · `Mistake: relying on index intersection (rarely optimal)` · `Ref: T3b.5` · `Theory 70/Practice 30` · `Local`
@@ -229,6 +231,62 @@ flowchart TD
 
 ---
 
+## Why Not?
+
+### Why MongoDB Instead of PostgreSQL JSONB?
+
+This is the most important "why not" in this tier. Postgres `JSONB` is genuinely excellent — indexed, transactional, queryable. Many teams reach for Mongo when Postgres would have done the job.
+
+**Use Postgres JSONB when**:
+
+- You want relational integrity on the parent row (foreign keys, transactions across tables)
+- Documents are embedded but not top-level entities
+- You need joins with relational data elsewhere
+- You want one database, not two
+
+**Use MongoDB when**:
+
+- The primary entities are genuinely document-shaped (content, catalogs, metadata)
+- Schema varies widely across documents (heterogeneous content)
+- Documents are self-contained and rarely need joins
+- You want the aggregation pipeline's flexibility for analytics-style queries
+- You benefit from schema-less iteration during rapid development
+
+**The honest answer**: Postgres JSONB covers ~70% of what people reach for MongoDB for. Choose Mongo when you've ruled out Postgres, not by default.
+
+### Why the Official `mongodb` Driver Instead of Mongoose?
+
+- **Mongoose** — ORM for Mongo. Adds schema enforcement, hooks, virtuals. Popular for teams coming from SQL.
+- **Why not Mongoose**: it hides the query API, adds a large runtime, its schema layer fights MongoDB's schema-flexibility, and it introduces its own patterns that don't transfer to other DBs.
+- **Why the driver**: you interact with the actual MongoDB API. Aggregation pipelines, indexes, transactions, sessions — all become concrete. When you later use an ORM, you'll know what it hides.
+
+### Why Document Modeling Over Relational Modeling (in this tier)?
+
+- **Relational** — normalized, foreign keys, joins. Correct when entities are highly related and queries are relational.
+- **Document** — aggregate-oriented, denormalized, embedded. Correct when entities are read together as one unit.
+- Trying to model document data relationally produces expensive `$lookup`s. Trying to model relational data as documents produces duplication and drift.
+- **Match the model to the workload**, not to your prior database experience.
+
+### Why `$lookup` Instead of Application-Side Joins?
+
+- **App-side joins** — N+1 problem, chatty network calls, unbounded latency at scale.
+- **`$lookup`** — in-database joins, one round-trip, uses indexes. The MongoDB way.
+- **However** — `$lookup` is slower than a proper SQL join because Mongo isn't optimized for it. If you find yourself needing many `$lookup`s, the data model is probably wrong (it should be embedded).
+
+### Why Transactions Are Rare in Mongo?
+
+- **Single-document updates are always atomic** in MongoDB. If your data model puts related data in one document (which is the document-design ideal), you rarely need transactions.
+- **Multi-document transactions** — supported (replica set required), but they cost performance and complicate failure modes.
+- **Rule**: if you find yourself needing multi-document transactions constantly, the data model is wrong — you're modeling relationally in a document store.
+
+### Why Schema Validation Even Though MongoDB Is "Schemaless"?
+
+- **"Schemaless"** is a marketing phrase. Real applications have structure. Documents that don't match expectations corrupt downstream logic silently.
+- **JSON Schema validation** — enforced at the DB level. Any client, any language, gets validated. Catches bugs before they hit the database.
+- **Skip validation** — you get "shape drift" where some documents have fields others don't. Every read must defend against every variant.
+
+---
+
 ## Exit Criteria
 
 You've completed T3b when you can:
@@ -248,6 +306,7 @@ You've completed T3b when you can:
 **Depends on**: T1 (async, TS), T2 (template).
 
 **Depended on by**:
+
 - T5 — background jobs may update Mongo documents
 - T6 — production ops (index management, connection tuning)
 - T7 — `catalog-service` is imported into `commerce-gateway`

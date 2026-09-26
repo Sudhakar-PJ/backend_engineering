@@ -28,6 +28,7 @@ T6 is where "it works on my laptop" becomes "it runs reliably in production at 3
 No new service. Instead, you take `inventory-service`, `catalog-service`, `auth-service`, and `media-service` and harden them:
 
 **What it includes:**
+
 1. Unit tests for pure logic; integration tests with Testcontainers; contract tests for external APIs (MSW)
 2. Multi-stage Dockerfiles for each service; `docker-compose.yml` orchestrating all of them
 3. GitHub Actions CI: lint → type-check → test → build → migrate → deploy
@@ -43,6 +44,7 @@ No new service. Instead, you take `inventory-service`, `catalog-service`, `auth-
 **What it proves**: you can operate a real backend system, not just build one.
 
 **Deliverables:**
+
 - Each service repo: Dockerfile, GitHub Actions workflow, tests, instrumentation
 - Root `docker-compose.yml` orchestrating all services
 - K8s manifests (or Helm chart)
@@ -104,7 +106,7 @@ flowchart TD
 ### T6.2 — Docker & Containerization
 
 - **Dockerfile fundamentals**: base image, layers, `COPY`, `RUN`, `CMD`, `ENTRYPOINT`
-  `BUILD` · `Anchor: T6` · `Deps: —` · `Fails: bloated images; slow builds; layer cache misses` · `Interview: Y` · `Artifact: Dockerfile` · `Mistake: `COPY . .` before `npm install` (cache invalidation)` · `Ref: T6.2 multi-stage` · `Theory 30/Practice 70` · `Local`
+  `BUILD` · `Anchor: T6` · `Deps: —` · `Fails: bloated images; slow builds; layer cache misses` · `Interview: Y` · `Artifact: Dockerfile` · `Mistake: `COPY . .`before`npm install` (cache invalidation)` · `Ref: T6.2 multi-stage` · `Theory 30/Practice 70` · `Local`
 
 - **Multi-stage builds**: build stage (with dev deps) → runtime stage (minimal)
   `BUILD` · `Anchor: T6` · `Deps: T6.2 Dockerfile` · `Fails: production images include dev dependencies (bloat, CVEs)` · `Interview: Y` · `Artifact: Dockerfile` · `Mistake: single-stage build for TypeScript projects` · `Ref: T6.2 optimization` · `Theory 30/Practice 70` · `Local`
@@ -125,7 +127,7 @@ flowchart TD
   `BUILD` · `Anchor: T6` · `Deps: T3a, T3c, T5` · `Fails: devs install services on their host (drift, complexity)` · `Interview: S` · `Artifact: docker-compose.yml` · `Mistake: no healthcheck in compose (deps not ready when app starts)` · `Ref: T6.4 k8s` · `Theory 30/Practice 70` · `Local`
 
 - **Compose `depends_on` with healthcheck**: wait for deps to be ready before starting app
-  `BUILD` · `Anchor: T6` · `Deps: T6.2 compose` · `Fails: app starts before DB is ready; crashes on boot` · `Interview: S` · `Artifact: docker-compose.yml` · `Mistake: `depends_on` without `condition: service_healthy`` · `Ref: T6.4 k8s` · `Theory 30/Practice 70` · `Local`
+  `BUILD` · `Anchor: T6` · `Deps: T6.2 compose` · `Fails: app starts before DB is ready; crashes on boot` · `Interview: S` · `Artifact: docker-compose.yml` · `Mistake: `depends_on`without`condition: service_healthy``·`Ref: T6.4 k8s`·`Theory 30/Practice 70`·`Local`
 
 - **Environment parity discipline**: same image runs in dev, staging, prod
   `KNOW` · `Anchor: T6` · `Deps: T6.2 compose` · `Fails: "works in dev, fails in prod"` · `Interview: S` · `Artifact: —` · `Mistake: different base images per environment` · `Ref: T6.5 release` · `Theory 60/Practice 40` · `Local`
@@ -203,7 +205,7 @@ flowchart TD
   `KNOW` · `Anchor: T6` · `Deps: T6.4 deployment` · `Fails: downtime during deploys` · `Interview: S` · `Artifact: —` · `Mistake: no readiness probe (traffic to unready pods)` · `Ref: T6.5 release` · `Theory 60/Practice 40` · `Local`
 
 - **Namespace discipline**: dev / staging / prod isolation
-  `KNOW` · `Anchor: T6` · `Deps: T6.4 core` · `Fails: prod deployed to dev by mistake` · `Interview: N` · `Artifact: —` · `Mistake: everything in `default`` · `Ref: T6.5 release` · `Theory 60/Practice 40` · `Local`
+  `KNOW` · `Anchor: T6` · `Deps: T6.4 core` · `Fails: prod deployed to dev by mistake` · `Interview: N` · `Artifact: —` · `Mistake: everything in `default``·`Ref: T6.5 release`·`Theory 60/Practice 40`·`Local`
 
 **Deep-dive candidates**: probe semantics, HPA tuning — generate on demand.
 
@@ -323,6 +325,45 @@ flowchart TD
 
 ---
 
+### T6.8 — Debugging Fundamentals
+
+> Consolidated debugging toolkit. Currently scattered across T1.4, T6.6, T6.7 — this subsection gives it a single home.
+
+- **Node Inspector**: `--inspect`, `node --inspect-brk`, attaching VS Code / Chrome DevTools
+  `USE` · `Anchor: T6` · `Deps: T1.7 inspector` · `Fails: debugging via `console.log` in production is slow and lossy` · `Interview: S` · `Artifact: debug-session.md` · `Mistake: not knowing how to attach a debugger to a running process` · `Ref: T6.7` · `Theory 20/Practice 80` · `Local`
+
+- **VS Code debugger for Node**: launch.json, breakpoints, conditional breakpoints, logpoints, watch expressions
+  `USE` · `Anchor: T6` · `Deps: T6.8 node-inspector` · `Fails: losing time to print-statement debugging` · `Interview: N` · `Artifact: launch.json` · `Mistake: never learning conditional breakpoints (essential for hot loops)` · `Ref: T6.7` · `Theory 20/Practice 80` · `Local`
+
+- **Source maps in debugging**: debugging TS directly via source maps
+  `USE` · `Anchor: T6` · `Deps: T6.8 vscode-debugger` · `Fails: debugging transpiled JS (unreadable)` · `Interview: N` · `Artifact: source-map-config` · `Mistake: forgetting `--enable-source-maps` in production` · `Ref: T6.7` · `Theory 30/Practice 70` · `Local`
+
+- **Heap snapshots and memory profiling**: `v8.getHeapSnapshot()`, Chrome DevTools memory tab, retained size, retaining paths
+  `USE` · `Anchor: T6` · `Deps: T1.4 heap` · `Fails: OOMKills in production with no idea which object leaked` · `Interview: Y` · `Artifact: heap-analysis.md` · `Mistake: taking snapshots too late (GC collapsed the leak)` · `Ref: T6.7` · `Theory 40/Practice 60` · `Local`
+
+- **CPU profiling and flamegraphs**: `--cpu-prof`, `clinic.js flame`, `0x`, flamegraph reading
+  `USE` · `Anchor: T6` · `Deps: T6.8 inspector` · `Fails: no idea which function is burning CPU under load` · `Interview: Y` · `Artifact: flamegraph-report.md` · `Mistake: profiling in dev with different load profile` · `Ref: T6.7` · `Theory 30/Practice 70` · `Local`
+
+- **`clinic.js` suite**: `clinic doctor` (event loop + memory), `clinic bubbleprof` (async), `clinic flame` (CPU)
+  `USE` · `Anchor: T6` · `Deps: T6.8 cpu-profiling` · `Fails: slow diagnosis of performance issues across layers` · `Interview: N` · `Artifact: clinic-reports/` · `Mistake: running clinic on a service not under realistic load` · `Ref: T6.7` · `Theory 20/Practice 80` · `Local`
+
+- **`strace` and `lsof` basics**: syscall tracing, open file descriptor inspection
+  `USE` · `Anchor: T6` · `Deps: T6.8 cpu-profiling` · `Fails: can't diagnose `EMFILE` or unexpected syscall patterns` · `Interview: N` · `Artifact: strace-notes.md` · `Mistake: running `strace` in prod without a filter (floods output)` · `Ref: T6.7` · `Theory 40/Practice 60` · `Local`
+
+- **`tcpdump` and network debugging basics (awareness)**: packet capture, filtering, `ss` for socket inspection
+  `KNOW` · `Anchor: T6` · `Deps: T6.8 strace` · `Fails: no way to debug network-layer issues` · `Interview: N` · `Artifact: —` · `Mistake: tcpdump without a filter on a busy host` · `Ref: T6.7` · `Theory 70/Practice 30` · `Local`
+
+- **`perf` and system profiling (awareness)**: Linux `perf` for CPU profiling at the OS level
+  `KNOW` · `Anchor: T6` · `Deps: T6.8 tcpdump` · `Fails: can't see what's happening below the runtime` · `Interview: N` · `Artifact: —` · `Mistake: `perf` without kernel symbols configured` · `Ref: T6.7` · `Theory 70/Practice 30` · `Local`
+
+- **Debugging in production without breaking it**: `--inspect` on a sidecar port, breakpoint-less profiling, `SIGUSR1` to open inspector
+  `USE` · `Anchor: T6` · `Deps: T6.8 heap-snapshots` · `Fails: can't diagnose production-only bugs` · `Interview: S` · `Artifact: prod-debugging.md` · `Mistake: pausing the process with a breakpoint in prod (blocks all requests)` · `Ref: T6.7` · `Theory 40/Practice 60` · `Local`
+
+- **`core dump` basics (awareness)**: enabling core dumps, `gdb` for reading them
+  `KNOW` · `Anchor: T6` · `Deps: T6.8 perf` · `Fails: no postmortem analysis after a hard crash` · `Interview: N` · `Artifact: —` · `Mistake: no `ulimit -c unlimited` when you needed it` · `Ref: T6.7` · `Theory 80/Practice 20` · `Local`
+
+---
+
 ### T6.8 — Production-Readiness Review
 
 - **Production readiness checklist**: enumerate criteria for shipping
@@ -341,6 +382,84 @@ flowchart TD
   `KNOW` · `Anchor: T6` · `Deps: T6.7 load-testing` · `Fails: scaling surprises at 2x current traffic` · `Interview: S` · `Artifact: —` · `Mistake: no baseline benchmark` · `Ref: T6.6 alerts` · `Theory 70/Practice 30` · `Local`
 
 **Deep-dive candidates**: production readiness checklist template — generate on demand.
+
+---
+
+## Why Not?
+
+### Why Docker Compose Over Kubernetes for This Curriculum?
+
+- **Kubernetes** — production-grade orchestration, autoscaling, service mesh, rolling updates. But heavy for a single-developer learning setup. Local K8s (kind, minikube, k3d) adds complexity that distracts from the service being built.
+- **Docker Compose** — one YAML file, `docker compose up`, done. Works locally, mirrors production topology enough for teaching, runs on any dev laptop.
+- **In this curriculum**: Compose for local dev and the T7 composition. K8s manifests covered at developer level (pods, deployments, probes, HPA, preStop) so you understand production deployments — but you don't need a running cluster to learn.
+- **In real jobs**: you'll use K8s or a PaaS. The concepts transfer; only the YAML changes.
+
+### Why Vitest Over Jest?
+
+- **Jest** — mature, huge ecosystem, works. But slower, heavier, more config, and its ESM support has been awkward.
+- **Vitest** — Vite-native, extremely fast, first-class ESM, TypeScript out of the box, Jest-compatible API. The current pragmatic default for new projects.
+- **Migration cost**: low — Vitest's API mirrors Jest's.
+
+### Why Testcontainers Over Docker Compose for Tests?
+
+- **Docker Compose for tests** — shared containers across test runs. State leaks between tests. Test order dependencies. "Passes locally, fails in CI" bugs.
+- **Testcontainers** — spin up ephemeral containers per test suite. Fresh DB per run. Isolated, deterministic, no state leaks.
+- **Cost**: slightly slower per test run (container startup ~2–5s). Worth it for the reliability.
+
+### Why MSW Over Nock?
+
+- **Nock** — intercepts `http`/`https` module calls. Node-only. Works, but doesn't catch `fetch` in newer runtimes unless polyfilled.
+- **MSW (Mock Service Worker)** — intercepts at the network layer, works with `fetch`, `axios`, and any HTTP client. Same mocks work in Node tests and in the browser.
+- **Choose MSW** unless you have a reason not to. Pick one, not both.
+
+### Why Trivy / Snyk Over `npm audit` Alone?
+
+- **`npm audit`** — finds known vulnerabilities in your dependency tree. But: no container image scanning, no OS package CVEs, no SBOM generation.
+- **Trivy** — scans container images, filesystems, git repos. Finds CVEs in OS packages, language packages, and IaC. Free and open-source.
+- **Snyk** — similar, with a hosted dashboard. Free tier limited.
+- **Rule**: `npm audit` in CI (fast, dependency-level). Trivy on the built image before push (image-level). Both, not either.
+
+### Why Prometheus + Grafana Over Datadog / New Relic?
+
+- **Datadog / New Relic** — excellent products, but expensive at scale and not self-hostable.
+- **Prometheus + Grafana** — open-source, self-hostable, industry standard. Prometheus scrapes metrics, Grafana visualizes. Add Loki for logs, Tempo/Jaeger for traces.
+- **When the paid tools make sense**: an org with budget and no SRE team. For learning and small teams, OSS wins.
+
+### Why OpenTelemetry Over a Vendor-Specific SDK?
+
+- **Vendor SDK** (Datadog, New Relic) — locked into that vendor. Switching means rewriting instrumentation.
+- **OpenTelemetry** — vendor-neutral standard. Instrument once, export to any backend (Jaeger, Tempo, Datadog, Honeycomb, Grafana Cloud). The industry is consolidating on it.
+- **Rule**: instrument with OTel. Choose a backend later.
+
+### Why OTel Tracing Over Just Logs?
+
+- **Logs alone** — discrete events. You can correlate via request ID, but reconstructing a request across 5 services from logs is painful.
+- **Tracing** — the request's full journey as a tree of spans, with durations and parent-child relationships. You see exactly which call was slow.
+- **Logs answer "what happened?"** Tracing answers "where was the time spent?" Both matter.
+
+### Why Sampled Tracing (Tail-Based) Over Full Tracing?
+
+- **Full tracing** — every request, every span. Storage costs explode. Sampling becomes an economic problem.
+- **Head-based sampling** — decide at request start. Simple, but you miss rare error traces (they're randomly dropped).
+- **Tail-based sampling** — decide after the request completes. Keep all errors + slow requests, sample success. Costs are bounded, valuable traces kept.
+
+### Why Alerts on Symptoms (Latency, Error Rate) Over Causes (CPU, Memory)?
+
+- **Cause-based alerts** (CPU > 80%, memory > 90%) — fire on states that may not affect users. Alert fatigue.
+- **Symptom-based alerts** (p99 latency > 500ms, error rate > 1%) — fire when users are affected. Actionable.
+- **Rule**: alert on SLOs, not on resource usage. Investigate causes when symptoms fire.
+
+### Why Multi-Window Burn-Rate Alerts Over Single-Window?
+
+- **Single window** (e.g., "error rate > 5% for 5 min") — either too sensitive (fires on blips) or too slow (misses slow burns).
+- **Multi-window** — fast burn (2% budget in 1h → page) plus slow burn (5% budget in 6h → ticket). Catches both acute and chronic issues.
+- **This is the Google SRE approach**. It's the state of the art.
+
+### Why Runbooks Over Hero Culture?
+
+- **Hero culture** — one engineer who knows how to fix everything. Unsustainable, and they burn out.
+- **Runbooks** — step-by-step diagnostic + mitigation for each known failure mode. Any on-call engineer can execute. Institutional knowledge lives in the runbook, not in someone's head.
+- **Rule**: every alert that can page links to a runbook.
 
 ---
 
@@ -364,6 +483,7 @@ You've completed T6 when you can:
 **Depends on**: all previous tiers.
 
 **Depended on by**:
+
 - T7 — uses hardened services behind the gateway
 - Mastery Phase — every project reuses the hardened template + observability stack
 

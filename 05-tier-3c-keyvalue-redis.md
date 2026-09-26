@@ -30,6 +30,7 @@ Unlike T3a and T3b (which produce services), T3c produces **three reusable modul
 3. **`cache-client`** — a typed caching client with cache-aside, TTL jitter, and single-flight mutex for stampede prevention
 
 **What it includes:**
+
 1. ioredis client with reconnect strategy and error handling
 2. Rate limiter: sliding window log + GCRA, atomic via Lua
 3. Session store: hash-based, TTL, refresh, revoke
@@ -43,6 +44,7 @@ Unlike T3a and T3b (which produce services), T3c produces **three reusable modul
 **What it proves**: you can build Redis primitives that other services depend on, with atomicity guaranteed, without subtle race conditions.
 
 **Deliverables:**
+
 - `projects/t3c-modules/` — three npm packages or a monorepo
 - Benchmarks with `autocannon` + `redis-benchmark`
 - README for each module with usage examples
@@ -89,7 +91,7 @@ flowchart TD
 ### T3c.2 — Core Data Structures
 
 - **Strings**: `GET`, `SET`, `MSET`, `MGET`, `INCR`, `DECR`, `SETEX`, `SET NX EX`
-  `BUILD` · `Anchor: T3c` · `Deps: T3c.1` · `Fails: race conditions on counters; missed TTLs` · `Interview: Y` · `Artifact: strings.ts` · `Mistake: using `SET` then `EXPIRE` instead of atomic `SETEX`` · `Ref: T3c.3` · `Theory 20/Practice 80` · `Local`
+  `BUILD` · `Anchor: T3c` · `Deps: T3c.1` · `Fails: race conditions on counters; missed TTLs` · `Interview: Y` · `Artifact: strings.ts` · `Mistake: using `SET`then`EXPIRE`instead of atomic`SETEX``·`Ref: T3c.3`·`Theory 20/Practice 80`·`Local`
 
 - **Hashes**: `HSET`, `HGET`, `HGETALL`, `HDEL`, `HINCRBY` — for objects with many fields
   `BUILD` · `Anchor: T3c` · `Deps: T3c.2 strings` · `Fails: storing objects as JSON strings (slow partial updates)` · `Interview: Y` · `Artifact: hashes.ts` · `Mistake: `HGETALL` on a large hash (blocks Redis)` · `Ref: T3c.4` · `Theory 30/Practice 70` · `Local`
@@ -122,10 +124,10 @@ flowchart TD
 ### T3c.3 — Atomic Operations & Race Prevention
 
 - **`INCR` / `DECR`**: atomic counters across all clients
-  `BUILD` · `Anchor: T3c` · `Deps: T3c.2 strings` · `Fails: race conditions in app-side increments` · `Interview: Y` · `Artifact: counters.ts` · `Mistake: `GET` then `SET` (not atomic)` · `Ref: T3c.5` · `Theory 30/Practice 70` · `Local`
+  `BUILD` · `Anchor: T3c` · `Deps: T3c.2 strings` · `Fails: race conditions in app-side increments` · `Interview: Y` · `Artifact: counters.ts` · `Mistake: `GET`then`SET` (not atomic)` · `Ref: T3c.5` · `Theory 30/Practice 70` · `Local`
 
 - **`SET key value EX ttl NX`**: atomic set-if-not-exists with TTL
-  `BUILD` · `Anchor: T3c` · `Deps: T3c.2 strings` · `Fails: race conditions on "acquire if absent"` · `Interview: Y` · `Artifact: set-nx.ts` · `Mistake: `EXISTS` then `SET` (two commands, not atomic)` · `Ref: T3c.5` · `Theory 30/Practice 70` · `Local`
+  `BUILD` · `Anchor: T3c` · `Deps: T3c.2 strings` · `Fails: race conditions on "acquire if absent"` · `Interview: Y` · `Artifact: set-nx.ts` · `Mistake: `EXISTS`then`SET` (two commands, not atomic)` · `Ref: T3c.5` · `Theory 30/Practice 70` · `Local`
 
 - **`MULTI` / `EXEC`**: transaction-like batching, but not ACID (no rollback)
   `BUILD` · `Anchor: T3c` · `Deps: T3c.3 atomic ops` · `Fails: multi-command operations torn apart by other clients` · `Interview: S` · `Artifact: multi-exec.ts` · `Mistake: assuming `MULTI` gives ACID semantics` · `Ref: T3c.3 Lua` · `Theory 40/Practice 60` · `Local`
@@ -242,7 +244,7 @@ flowchart TD
   `BUILD` · `Anchor: T3c` · `Deps: T3c.1 in-memory` · `Fails: Redis consumes all available RAM; OOMKill` · `Interview: Y` · `Artifact: redis.conf` · `Mistake: no memory limit configured` · `Ref: T6` · `Theory 30/Practice 70` · `Local`
 
 - **Eviction policies**: `noeviction`, `allkeys-lru`, `allkeys-lfu`, `volatile-lru`, `volatile-ttl`
-  `BUILD` · `Anchor: T3c` · `Deps: T3c.7 maxmemory` · `Fails: unexpected key evictions (session store wiped)` · `Interview: Y` · `Artifact: eviction.conf` · `Mistake: using `allkeys-*` when session keys must persist` · `Ref: T6` · `Theory 40/Practice 60` · `Local`
+  `BUILD` · `Anchor: T3c` · `Deps: T3c.7 maxmemory` · `Fails: unexpected key evictions (session store wiped)` · `Interview: Y` · `Artifact: eviction.conf` · `Mistake: using `allkeys-\*` when session keys must persist` · `Ref: T6` · `Theory 40/Practice 60` · `Local`
 
 - **Key eviction under memory pressure**: what happens when Redis is full
   `KNOW` · `Anchor: T3c` · `Deps: T3c.7 eviction policies` · `Fails: writes rejected when `noeviction`; hot keys evicted` · `Interview: S` · `Artifact: —` · `Mistake: no monitoring on eviction rate` · `Ref: T6` · `Theory 60/Practice 40` · `Local`
@@ -251,7 +253,7 @@ flowchart TD
   `KNOW` · `Anchor: T3c` · `Deps: T3c.1 persistence` · `Fails: lose data since last snapshot on crash` · `Interview: S` · `Artifact: —` · `Mistake: assuming RDB is continuous` · `Ref: T6` · `Theory 60/Practice 40` · `Local`
 
 - **AOF (append-only file)**: log every write, replay on restart
-  `KNOW` · `Anchor: T3c` · `Deps: T3c.7 RDB` · `Fails: data loss on crash; slower writes` · `Interview: S` · `Artifact: —` · `Mistake: `always` fsync (slow); `no` fsync (data loss)` · `Ref: T6` · `Theory 60/Practice 40` · `Local`
+  `KNOW` · `Anchor: T3c` · `Deps: T3c.7 RDB` · `Fails: data loss on crash; slower writes` · `Interview: S` · `Artifact: —` · `Mistake: `always`fsync (slow);`no` fsync (data loss)` · `Ref: T6` · `Theory 60/Practice 40` · `Local`
 
 - **Hybrid persistence**: RDB + AOF together
   `KNOW` · `Anchor: T3c` · `Deps: T3c.7 RDB + AOF` · `Fails: choose one, lose the benefit of the other` · `Interview: N` · `Artifact: —` · `Mistake: not testing restore time on production-sized datasets` · `Ref: T6` · `Theory 60/Practice 40` · `Local`
@@ -260,7 +262,7 @@ flowchart TD
   `KNOW` · `Anchor: T3c` · `Deps: T3c.6 caching` · `Fails: single hot key saturates one Redis instance` · `Interview: S` · `Artifact: —` · `Mistake: sharding every key (complexity for no reason)` · `Ref: T5` · `Theory 70/Practice 30` · `Local`
 
 - **Key naming conventions**: prefixes, namespacing, avoiding collisions
-  `BUILD` · `Anchor: T3c` · `Deps: T3c.2 strings` · `Fails: collisions across services; hard to debug` · `Interview: N` · `Artifact: key-naming.md` · `Mistake: ad-hoc keys (`user:42` vs `users:42`)` · `Ref: T6` · `Theory 30/Practice 70` · `Local`
+  `BUILD` · `Anchor: T3c` · `Deps: T3c.2 strings` · `Fails: collisions across services; hard to debug` · `Interview: N` · `Artifact: key-naming.md` · `Mistake: ad-hoc keys (`user:42`vs`users:42`)` · `Ref: T6` · `Theory 30/Practice 70` · `Local`
 
 - **Monitoring memory and evictions**: `INFO memory`, `INFO stats`, `SLOWLOG`
   `USE` · `Anchor: T3c` · `Deps: T3c.7 maxmemory` · `Fails: can't diagnose memory issues until Redis crashes` · `Interview: S` · `Artifact: monitoring.md` · `Mistake: no alerting on eviction rate` · `Ref: T6` · `Theory 40/Practice 60` · `Local`
@@ -288,6 +290,60 @@ flowchart TD
 
 ---
 
+## Why Not?
+
+### Why Redis Instead of Memcached / KeyDB / Dragonfly?
+
+- **Memcached** — simpler, faster for pure KV, but no persistence, no data structures beyond strings, no pub/sub, no streams, no Lua. Redis is a superset for nearly all backend use cases.
+- **KeyDB** — Redis fork, multi-threaded, faster for CPU-bound workloads. Smaller community; Redis 7+ closed some performance gaps.
+- **Dragonfly** — modern Redis alternative, single binary, very fast, but newer and less battle-tested at scale.
+- **Redis** — the pragmatic default: rich data structures, Lua scripting, streams, mature client libraries, universally understood.
+
+**When Redis isn't right**: durable entity storage (Postgres), complex queries (Postgres), large blobs (S3/MinIO), relational data (Postgres).
+
+### Why Redis Instead of an In-Process Cache (`lru-cache`)?
+
+- **In-process cache** — sub-microsecond access, no network hop. But per-process: five instances = five caches, invalidation across them is unsolved, memory unbounded per process.
+- **Redis (L2)** — shared across instances, invalidation is one `DEL`. But network hop adds ~0.5–2ms latency.
+- **The right answer**: often both. L1 (in-process, small, short TTL) for hottest keys; L2 (Redis) for the shared long tail. L1's short TTL limits staleness.
+- **In-process only** breaks the moment you scale horizontally. Redis first; add L1 when latency matters and you can tolerate short staleness.
+
+### Why BullMQ Instead of RabbitMQ / pg-boss / SQS?
+
+- **RabbitMQ** — full message broker, complex routing (exchanges, topics), excellent for cross-service messaging. Overkill for in-service job queues. Adds operational burden (Erlang VM, cluster management).
+- **pg-boss** — Postgres-backed queue. Excellent if you want one fewer dependency. Slower than Redis for high-throughput jobs (every job is a DB row). Choose when you already have Postgres and job volume is modest.
+- **SQS** — AWS-managed, no ops. But paid (small cost), and locks you into AWS. Against the zero-spend guarantee.
+- **BullMQ** — Redis-backed, TypeScript-native, rich features (delayed jobs, priorities, rate limiting, repeatable jobs, DLQ via failed-job listeners), atomic via Lua scripts. Best fit for Node + Redis stacks.
+
+### Why Sliding Window Log Over Fixed Window for Rate Limiting?
+
+- **Fixed window** — trivial to implement (`INCR` + `EXPIRE`), but bursty at boundaries (100 requests at 11:59:59, 100 at 12:00:00 → 200 in 2 seconds).
+- **Sliding window log** — `ZADD` timestamps, `ZREMRANGEBYSCORE` old entries, `ZCARD` count. Accurate, smooth. Cost: one entry per request (memory-heavy at scale).
+- **Sliding window counter** — weighted average of current + previous window. Approximate, memory-cheap, smooth.
+- **Token bucket / GCRA** — best for burst tolerance. GCRA is single-key, memory-efficient, and exact.
+- **Rule**: fixed window is almost always wrong. Choose based on burst tolerance (token bucket / GCRA), memory budget (sliding counter over sliding log), and required precision.
+
+### Why `SET key value EX ttl NX` Instead of `EXISTS` + `SET`?
+
+- **Two-command check-then-set** — race condition. Two clients can both see "not present," both set, and one silently overwrites the other.
+- **`SET NX EX`** — atomic. Either you set it (you got the lock / cache slot), or you didn't (someone else did). No race.
+- **This is the single most common Redis mistake** in backend code.
+
+### Why Lua Scripts Instead of `MULTI/EXEC`?
+
+- **`MULTI/EXEC`** — batches commands, executes them sequentially. No other client's commands interleave. But: no conditionals. You can't read a value, decide based on it, and write back — the read and write are separate operations and other clients can interleave.
+- **Lua scripts** — executed server-side, atomically. You can read, branch on the value, and write in one atomic block. The engine for every real Redis rate limiter and distributed lock.
+- **Caveat**: Lua in Redis is single-threaded. Long scripts block the entire Redis instance. Keep them fast (<1ms).
+
+### Why Persistence Is Not a Substitute for Postgres?
+
+- **RDB snapshots** — periodic. Lose everything since the last snapshot on crash.
+- **AOF** — every write logged. Durable, but slower. Still not a full ACID database (no multi-key transactions with rollback, no schema, no joins).
+- **Redis is for ephemeral state**: cache, sessions, rate limits, locks, pub/sub. Durable entity storage belongs in Postgres.
+- **"We'll just enable AOF and use Redis as our main DB"** — this is how teams discover the hard way that Redis isn't a database.
+
+---
+
 ## Exit Criteria
 
 You've completed T3c when you can:
@@ -306,6 +362,7 @@ You've completed T3c when you can:
 **Depends on**: T1 (async, Lua basics via JS), T2 (template), T3a (durable storage — Redis complements, not replaces).
 
 **Depended on by**:
+
 - T4 — `session-store`, `rate-limiter`
 - T5 — `cache-client`, `locks`
 - T6 — production ops (memory tuning, monitoring)
